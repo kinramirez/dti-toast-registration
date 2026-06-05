@@ -3,6 +3,10 @@
 @source "../src/**/*.{js,ts,jsx,tsx}";
 @plugin "tailwindcss-animate";
 
+@import '@fontsource/kanit/400.css';
+@import '@fontsource/kanit/500.css';
+@import '@fontsource/kanit/600.css';
+
 @custom-variant dark (&:is(.dark *));
 
 @layer base {
@@ -222,6 +226,13 @@
   --color-brand-dark: #121212;
   --color-brand-blue: #1877f2;
 
+  /* Design spec colors (Registration Step 1) */
+  --color-neutral-gray: #808080;
+  --color-danger-red: #ED1C24;
+  --color-input-bg: #F1F1F1;
+  --color-border-line: #DADADA;
+  --color-text-dark: #434343;
+
   /* Shadcn colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -264,6 +275,7 @@
   /* Font families */
   --font-saira: 'Saira', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
   --font-kanit: 'Kanit', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-satoshi: 'Saira', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
 
   /* Font sizes */
   --font-size-hero: 128px;
