@@ -33,7 +33,9 @@ const initialForm = {
   occasion: '',
   guests: '',
   budget: '',
-  // suppliers: omitted — Field 6 hidden until product/API finalizes
+  suppliers: [],
+  occasionOther: '',
+  suppliersOther: '',
   specificSuppliers: '',
   lumiPromos: '',
   discoveryChannel: '',
@@ -92,6 +94,9 @@ const step2Schema = z.object({
   occasion: z.string().min(1, 'Please select the occasion.'),
   guests: z.string().min(1, 'Please select expected guests.'),
   budget: z.string().min(1, 'Please select your budget range.'),
+  suppliers: z.array(z.string()).min(1, 'Please select at least one supplier.'),
+  occasionOther: z.string().optional(),
+  suppliersOther: z.string().optional(),
   specificSuppliers: z.string().optional(),
   lumiPromos: z.string().optional(),
   discoveryChannel: z
@@ -109,6 +114,21 @@ const step2Schema = z.object({
       message: 'You must agree to receive updates and communications.',
     }),
   }),
+}).superRefine((data, ctx) => {
+  if (data.occasion === 'Other' && !data.occasionOther?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['occasionOther'],
+      message: 'Please specify your occasion.',
+    });
+  }
+  if (data.suppliers.includes('Other') && !data.suppliersOther?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['suppliersOther'],
+      message: 'Please specify other suppliers.',
+    });
+  }
 });
 
 const stepTransition = {
@@ -172,6 +192,9 @@ export default function EventFormPage() {
       occasion: form.occasion,
       guests: form.guests,
       budget: form.budget,
+      suppliers: form.suppliers,
+      occasionOther: form.occasionOther,
+      suppliersOther: form.suppliersOther,
       specificSuppliers: form.specificSuppliers,
       lumiPromos: form.lumiPromos,
       discoveryChannel: form.discoveryChannel,
@@ -198,8 +221,10 @@ export default function EventFormPage() {
       form.role, form.eventDate, form.occasion, form.guests, form.budget,
       form.specificSuppliers, form.lumiPromos, form.discoveryChannel,
       form.discoveryOther, form.province, form.locationOther,
+      form.occasionOther, form.suppliersOther,
     ];
-    return nonEmptyFields.some((v) => v !== '' && v !== 'Male');
+    return nonEmptyFields.some((v) => v !== '' && v !== 'Male')
+      || (Array.isArray(form.suppliers) && form.suppliers.length > 0);
   }, [form]);
 
   function markTouched(name) {
@@ -296,11 +321,14 @@ export default function EventFormPage() {
       occasion: true,
       guests: true,
       budget: true,
+      suppliers: true,
       discoveryChannel: true,
       province: true,
       city: true,
       locationOther: true,
       consent: true,
+      ...(form.occasion === 'Other' ? { occasionOther: true } : {}),
+      ...(form.suppliers.includes('Other') ? { suppliersOther: true } : {}),
     }));
 
     const result = step2Schema.safeParse({
@@ -309,6 +337,9 @@ export default function EventFormPage() {
       occasion: form.occasion,
       guests: form.guests,
       budget: form.budget,
+      suppliers: form.suppliers,
+      occasionOther: form.occasionOther,
+      suppliersOther: form.suppliersOther,
       specificSuppliers: form.specificSuppliers,
       lumiPromos: form.lumiPromos,
       discoveryChannel: form.discoveryChannel,
@@ -347,13 +378,13 @@ export default function EventFormPage() {
       company: form.company.trim() || null,
       position: form.position.trim() || null,
       // Step 2 fields
-      // TODO: confirm payload keys with Backend
       role: form.role,
       eventDate: form.eventDate,
-      occasion: form.occasion,
+      occasionPlanningFor: form.occasion,
       guests: form.guests,
       budget: form.budget,
-      specificSuppliers: form.specificSuppliers.trim() || null,
+      suppliersLookingFor: (form.suppliers || []).join(', '),
+      specificSuppliers: form.suppliersOther?.trim() || form.specificSuppliers?.trim() || null,
       lumiPromos: form.lumiPromos || null,
       discoveryChannel: form.discoveryChannel,
       discoveryOther: form.discoveryOther.trim() || null,
