@@ -359,11 +359,9 @@ export default function EventFormPage() {
   // Payload builder — isolates API shape from UI state
   function buildPayload() {
     const fullName = `${form.firstName} ${form.lastName}`.trim();
-    const cleanedNumber = form.phone.replace(/[\s()-]/g, '');
-    const isMobile = mobilePattern.test(cleanedNumber);
 
     return {
-      eventGuId,
+      eventGuid: eventGuId,
       // Step 1 fields
       fullName,
       firstName: form.firstName.trim(),
@@ -371,22 +369,18 @@ export default function EventFormPage() {
       age: form.age,
       gender: form.gender,
       email: form.email.trim(),
-      phone1: isMobile ? cleanedNumber : null,
-      phone2: null,
-      landline1: !isMobile ? cleanedNumber : null,
-      landline2: null,
+      mobileNumber: form.phone,
       company: form.company.trim() || null,
       position: form.position.trim() || null,
       // Step 2 fields
-      role: form.role,
+      myRoleInOccasion: form.role,
       eventDate: form.eventDate,
       occasionPlanningFor: form.occasion,
-      guests: form.guests,
+      numberOfGuests: form.guests,
       budget: form.budget,
       suppliersLookingFor: (form.suppliers || []).join(', '),
       specificSuppliers: form.suppliersOther?.trim() || form.specificSuppliers?.trim() || null,
-      lumiPromos: form.lumiPromos || null,
-      discoveryChannel: form.discoveryChannel,
+      promoPreference: form.lumiPromos || null,
       discoveryOther: form.discoveryOther.trim() || null,
       province: form.province,
       city: form.city,
@@ -400,8 +394,7 @@ export default function EventFormPage() {
       purpose: form.purpose,
       source: form.source,
       visitorFrequency: form.visitorFrequency,
-      agreedToTerms: form.consent,
-      purposeOfVisit: form.role,
+      agreedToTerms: 'Yes, I agree.',
       howHeardAboutEvent: form.discoveryChannel,
       firstTimeToJoin: 'Yes',
     };
