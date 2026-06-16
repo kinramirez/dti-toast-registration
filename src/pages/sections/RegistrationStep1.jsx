@@ -13,7 +13,16 @@ const STEPS = [
   { number: 2, label: 'Purpose of Visit' },
 ];
 
-const AGE_OPTIONS = ['20 and below'];
+const AGE_OPTIONS = [
+  '20 and below',
+  '21-25',
+  '26-30',
+  '31-35',
+  '36-40',
+  '41-45',
+  '46-50',
+  '51 and above',
+];
 
 export default function RegistrationStep1({
   form,
@@ -108,7 +117,7 @@ export default function RegistrationStep1({
                 required
                 value={form.age}
                 onChange={handleChange}
-                placeholder='20 and below'
+                placeholder='Select age range'
                 options={AGE_OPTIONS}
                 error={touched.age ? errors.age : undefined}
               />
