@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const DEFAULT_API_BASE_URL = 'https://api-dti.myiiap.com/api/v1'
+const DEFAULT_API_BASE_URL = 'https://api.toastweddingfair.ph/api/v1'
 const configuredBaseURL = import.meta.env.VITE_API_BASE_URL?.trim()
 const remoteBaseURL = configuredBaseURL || DEFAULT_API_BASE_URL
 const baseURL =

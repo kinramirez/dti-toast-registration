@@ -16,53 +16,55 @@ const STEPS = [
 
 // Placeholder options — accept from parent for future-proofing
 const ROLE_OPTIONS = [
-  'Bride',
-  'Groom',
-  'Parent of Bride/Groom',
-  'Friend/Relative',
-  'Wedding Planner/Coordinator',
-  'Other',
+  'I am the one planning it.',
+  'I am accompanying someone.',
+  'I am just looking around.',
 ];
 
 const EVENT_DATE_OPTIONS = [
-  'January 2026',
-  'February 2026',
-  'March 2026',
-  'April 2026',
-  'May 2026',
-  'June 2026',
-  'July 2026',
-  'August 2026',
-  'September 2026',
-  'October 2026',
-  'November 2026',
-  'December 2026',
-  '2027 or later',
+  'July-Dec 2026',
+  'Jan-June 2027',
+  'July-Dec 2027',
+  'Jan-June 2028',
+  'July-Dec 2028',
+  'Jan-June 2029',
+  'July 2029 onwards',
 ];
 
 const OCCASION_OPTIONS = [
   'Wedding',
-  'Birthday',
+  'Debut',
+  'Birthday Party',
+  'Social Gathering',
   'Anniversary',
+  'Family Reunion',
   'Corporate Event',
   'Other',
 ];
 
 const GUESTS_OPTIONS = [
-  'Less than 50',
-  '50 - 100',
-  '100 - 200',
-  '200 - 300',
-  'More than 300',
+  'Below 50',
+  '50-100',
+  '101-150',
+  '151-200',
+  '201-250',
+  '251-300',
+  '301-350',
+  '351-400',
+  '401-450',
+  '451-500',
+  '501 and above',
 ];
 
 const BUDGET_OPTIONS = [
-  'Below PHP 50,000',
-  'PHP 50,000 - PHP 100,000',
-  'PHP 100,000 - PHP 200,000',
-  'PHP 200,000 - PHP 500,000',
-  'PHP 500,000 - PHP 1,000,000',
-  'Above PHP 1,000,000',
+  'Below PHP 100,000',
+  'PHP 100,000 - PHP 300,000',
+  'PHP 301,000 - PHP 500,000',
+  'PHP 501,000 - PHP 999,000',
+  'PHP 1,000,000 - PHP 1,500,000',
+  'PHP 1,600,000 - PHP 2,000,000',
+  'PHP 2,100,000 - PHP 2,900,000',
+  'PHP 3,000,000 and above',
 ];
 
 const LUMI_OPTIONS = [
@@ -83,6 +85,34 @@ const DISCOVERY_OPTIONS = [
   'Friends & Family',
   'WhenInManila',
   'DiscoverMNL',
+];
+
+const SUPPLIERS_OPTIONS = [
+  'Alcohol Suppliers',
+  'Bridal Car',
+  'Bridal Shoes and Accessories',
+  'Cakes and other Baked Goods',
+  'Caterers',
+  'Coordinator',
+  'Entertainment',
+  'Event Stylist',
+  'Fashion Stylist',
+  'Florist',
+  'Food Carts',
+  'Gowns and Suits',
+  'Host',
+  'Invitations and Stationary',
+  'Jewelry',
+  'Lights and Sounds',
+  'Make Up Artists',
+  'Mobile Bar',
+  'Photographers',
+  'Prenup Needs',
+  'Tent and Aircon Rental',
+  'Venue',
+  'Videographers',
+  'Souvenirs',
+  'Other',
 ];
 
 export default function RegistrationStep2({
@@ -114,6 +144,14 @@ export default function RegistrationStep2({
     onChange({
       target: { name: 'consent', type: 'checkbox', checked: !form.consent },
     });
+  }
+
+  function handleSuppliersChange(supplier) {
+    const current = form.suppliers || [];
+    const next = current.includes(supplier)
+      ? current.filter((s) => s !== supplier)
+      : [...current, supplier];
+    onChange({ target: { name: 'suppliers', value: next } });
   }
 
   // Transform hook options to { value, label } format for SearchableSelect
@@ -222,6 +260,19 @@ export default function RegistrationStep2({
                 options={OCCASION_OPTIONS}
                 error={touched.occasion ? errors.occasion : undefined}
               />
+              {form.occasion === 'Other' && (
+                <FormField
+                  label='Please specify'
+                  name='occasionOther'
+                  required
+                  value={form.occasionOther}
+                  onChange={handleChange}
+                  placeholder='Please specify your occasion'
+                  error={
+                    touched.occasionOther ? errors.occasionOther : undefined
+                  }
+                />
+              )}
               <FormSelect
                 label='How many guests are you expecting for your event?'
                 name='guests'
@@ -243,6 +294,62 @@ export default function RegistrationStep2({
                 error={touched.budget ? errors.budget : undefined}
               />
             </div>
+
+            {/* Field 6: Suppliers Multi-Select Checklist */}
+            <div className='mt-8 flex flex-col gap-1'>
+              <label className='text-[#1877F2] mb-2 block text-base font-medium'>
+                Which suppliers are you looking for? Tick all that you need.<span className='text-red-500 ml-0.5'>*</span>
+              </label>
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-3 pt-2'>
+                {SUPPLIERS_OPTIONS.map((option) => (
+                  <label
+                    key={option}
+                    className='flex items-center gap-2 cursor-pointer'
+                  >
+                    <button
+                      type='button'
+                      onClick={() => handleSuppliersChange(option)}
+                      className={`flex-shrink-0 w-4 h-4 rounded-sm border flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-[#1877F2] focus:ring-offset-1 ${
+                        (form.suppliers || []).includes(option)
+                          ? 'bg-[#1877F2] border-[#1877F2]'
+                          : 'border-[#808080] bg-white'
+                      }`}
+                      aria-checked={(form.suppliers || []).includes(option)}
+                      role='checkbox'
+                    >
+                      {(form.suppliers || []).includes(option) && (
+                        <Check className='w-3 h-3 text-white' />
+                      )}
+                    </button>
+                    <span className='text-[16px] text-text-dark font-medium'>
+                      {option}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {touched.suppliers && errors.suppliers ? (
+                <p className='text-[11px] text-red-500 mt-0.5'>
+                  {errors.suppliers}
+                </p>
+              ) : null}
+            </div>
+
+            {/* Conditional Suppliers "Other" Input */}
+            {(form.suppliers || []).includes('Other') && (
+              <div className='mt-8'>
+                <FormField
+                  label='Please specify'
+                  name='suppliersOther'
+                  required
+                  value={form.suppliersOther}
+                  onChange={handleChange}
+                  placeholder='Please specify other suppliers'
+                  error={
+                    touched.suppliersOther ? errors.suppliersOther : undefined
+                  }
+                />
+              </div>
+            )}
 
             {/* Field 7: Specific Suppliers (full-width) */}
             <div className='mt-8'>
