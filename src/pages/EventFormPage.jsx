@@ -149,7 +149,7 @@ export default function EventFormPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const event = location.state?.event;
-  const eventGuId = event?.guid ?? event?.eventGuId ?? event?.guId;
+  const eventGuId = event?.guid ?? event?.id ?? event?.eventGuId ?? event?.guId;
   const {
     regionCode,
     setRegionCode,
