@@ -1,4 +1,5 @@
 import apiClient from './client.js';
+import { normalizeEvent } from '@/lib/utils/eventUtils';
 
 export async function getEvents({ page = 1, limit = 10, month, year } = {}) {
   const response = await apiClient.get('/event-registrations/events', {
@@ -26,4 +27,14 @@ export async function getEvents({ page = 1, limit = 10, month, year } = {}) {
     currentPage,
     limit: raw?.limit ?? raw?.meta?.limit ?? limit,
   };
+}
+
+export async function getEventById(eventGuid) {
+  const response = await apiClient.get(`/event-registrations/events/${eventGuid}`);
+  const raw = response.data;
+  const event = raw?.data ?? raw;
+  if (!event || (typeof event === 'object' && Object.keys(event).length === 0)) {
+    return null;
+  }
+  return normalizeEvent(event);
 }
