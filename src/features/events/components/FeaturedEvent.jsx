@@ -1,183 +1,231 @@
 import React, { useState } from 'react';
-import { CalendarCheck, CalendarX, MapPin, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Star, ArrowRight, MapPin, Clock, Calendar, SquareUser, UsersRound } from 'lucide-react';
 import ImageModal from '@/components/ui/ImageModal';
 import { useNavigate } from 'react-router-dom';
 import dtiLogo from '@/assets/dtilogo.png';
 import { formatDate, formatTime } from '@/lib/utils/eventUtils';
 
-const FeaturedEvent = ({ event, events = [] }) => {
+const FeaturedEvent = ({ event }) => {
   const navigate = useNavigate();
   const [isImageOpen, setIsImageOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
 
-  const openImage = (imgSrc) => {
-    setSelectedImage(imgSrc);
-    setIsImageOpen(true);
-  };
-
-  const handleNavigate = () => {
-    if (event?.image) {
-      const img = new Image();
-      img.src = event.image;
-    }
-    navigate(`/event/${event.id}`, { state: { event } });
-  };
+  if (!event) return null;
 
   const handleRegister = () => {
-    if (event?.image) {
-      const img = new Image();
-      img.src = event.image;
-    }
     navigate('/event/register', { state: { event } });
   };
 
-  if (!event) {
-    return (
-      <div className='mb-16 rounded-3xl border border-slate-200 bg-white px-8 py-12 text-center'>
-        <h3 className='text-xl font-bold text-blue-600 mb-4'>FEATURED EVENT</h3>
-        <p className='text-gray-600 max-w-2xl mx-auto text-sm leading-relaxed'>
-          There are no current events in your area right now. Please check again
-          later for new event listings.
-        </p>
-      </div>
-    );
-  }
+  // Format date range with day names
+  const formatDateRange = () => {
+    if (!event.startDate) return '';
+    const start = new Date(event.startDate);
+    const end = event.endDate ? new Date(event.endDate) : null;
+
+    const startFormatted = start.toLocaleDateString('en-US', {
+      month: 'long',
+      day: '2-digit',
+      year: 'numeric',
+    });
+
+    if (!end) return startFormatted;
+
+    const endFormatted = end.toLocaleDateString('en-US', {
+      month: 'long',
+      day: '2-digit',
+      year: 'numeric',
+    });
+
+    const startDay = start.toLocaleDateString('en-US', { weekday: 'long' });
+    const endDay = end.toLocaleDateString('en-US', { weekday: 'long' });
+
+    return {
+      range: `${startFormatted} - ${endFormatted}`,
+      days: `${startDay} - ${endDay}`,
+    };
+  };
+
+  // Format time range
+  const formatTimeRange = () => {
+    const startTime = formatTime(event.event_start_time) || '11:00 AM';
+    const endTime = formatTime(event.event_end_time) || '08:00 PM';
+    return {
+      range: `${startTime} - ${endTime}`,
+      label: 'Both Days',
+    };
+  };
+
+  const dateInfo = formatDateRange();
+  const timeInfo = formatTimeRange();
 
   return (
-    <div className='mb-16'>
-      <h3 className='text-xl font-bold text-blue-600 mb-6'>FEATURED EVENT</h3>
-      <div className='flex flex-col md:flex-row gap-8'>
+    <div className="mb-[60px]">
+      <div
+        className="flex flex-col lg:flex-row rounded-lg overflow-hidden border"
+        style={{ borderColor: '#C55F61', borderWidth: '0.5px' }}
+      >
+        {/* Left: Image with badge */}
         <div
-          className='w-full md:w-1/3 bg-slate-100 h-64 sm:h-90 md:h-[400px] overflow-hidden rounded-xl cursor-pointer group relative'
-          onClick={() => openImage(event.image)}
+          className="relative w-full lg:w-[360px] min-h-[360px] lg:self-stretch shrink-0 bg-slate-100 cursor-pointer group overflow-hidden"
+          onClick={() => setIsImageOpen(true)}
         >
           <img
             src={event.image || dtiLogo}
-            alt={event.title || 'Event image'}
-            loading='lazy'
-            decoding='async'
+            alt={event.title || 'Featured event image'}
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               e.currentTarget.onerror = null;
               e.currentTarget.src = dtiLogo;
             }}
-            className='w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-90'
+            className="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-90"
           />
-          <div className='absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20'>
-            <span className='text-white text-xs font-bold bg-black/50 px-3 py-1 rounded-full'>
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+            <span className="text-white text-xs font-bold bg-black/50 px-3 py-1 rounded-full font-satoshi">
               View Fullscreen
             </span>
           </div>
+          {/* Featured badge */}
+          <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-[#C55F61] text-white px-3 py-1.5 rounded text-xs font-bold font-satoshi">
+            <Star className="w-3.5 h-3.5 fill-[#FFB24E] text-[#FFB24E]" />
+            FEATURED EVENT
+          </div>
         </div>
 
-        <div className='w-full md:w-2/3 flex flex-col justify-center'>
-          {/* <span className='text-blue-500 font-bold text-sm mb-2'>
-            {event.category}
-          </span> */}
-          <h4 className='text-2xl font-bold text-gray-900 mb-4'>
+        {/* Center: Content */}
+        <div className="flex-1 flex flex-col justify-center px-8 py-8 min-w-0">
+          <span className="text-sm font-bold text-[#C55F61] font-satoshi uppercase tracking-wider mb-2">
+            UP NEXT
+          </span>
+          <h3 className="text-[32px] font-bold text-[#121212] font-cormorant leading-tight mb-3">
             {event.title}
-          </h4>
-          <p className='text-gray-600 text-sm mb-6 leading-relaxed'>
+          </h3>
+          <p className="text-sm text-[#737373] font-satoshi leading-relaxed mb-6 line-clamp-3">
             {event.description}
           </p>
 
-          <div className='flex flex-col gap-3 text-sm font-medium text-gray-800 mb-8'>
-            <div className='flex items-center gap-3'>
-              <CalendarCheck className='h-5 w-5 text-gray-600' />
-              Start: {formatDate(event.startDate)} |{' '}
-              {formatTime(event.event_start_time) || '12:00 AM'}
+          {/* Meta row with dividers */}
+          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-0">
+            {/* Date */}
+            <div className="flex items-start gap-2 sm:flex-1">
+              <Calendar className="w-5 h-5 text-[#C55F61] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-[#121212] font-satoshi">
+                  {typeof dateInfo === 'string' ? dateInfo : dateInfo.range}
+                </p>
+                {typeof dateInfo !== 'string' && (
+                  <p className="text-xs text-[#737373] font-satoshi mt-0.5">
+                    {dateInfo.days}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className='flex items-center gap-3'>
-              <CalendarX className='h-5 w-5 text-gray-600' />
-              End: {formatDate(event.endDate)} |{' '}
-              {formatTime(event.event_end_time) || '12:00 AM'}
+
+            {/* Divider */}
+            <div className="hidden sm:block w-px h-10 bg-[#E8E8E8] mx-4" />
+
+            {/* Time */}
+            <div className="flex items-start gap-2 sm:flex-1">
+              <Clock className="w-5 h-5 text-[#C55F61] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-[#121212] font-satoshi">
+                  {timeInfo.range}
+                </p>
+                <p className="text-xs text-[#737373] font-satoshi mt-0.5">
+                  {timeInfo.label}
+                </p>
+              </div>
             </div>
-            <div className='flex items-center gap-3'>
-              <MapPin className='h-5 w-5 text-gray-600' />
-              {event.location}
+
+            {/* Divider */}
+            <div className="hidden sm:block w-px h-10 bg-[#E8E8E8] mx-4" />
+
+            {/* Venue */}
+            <div className="flex items-start gap-2 sm:flex-1">
+              <MapPin className="w-5 h-5 text-[#C55F61] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-[#121212] font-satoshi">
+                  {event.location}
+                </p>
+                <p className="text-xs text-[#737373] font-satoshi mt-0.5">
+                  {event.location}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Stat pills + CTA */}
+        <div className="flex flex-col items-center justify-center gap-6 px-8 py-8 lg:border-l border-[#E8E8E8] shrink-0">
+          {/* Stat pills — matching BenefitsCard layout */}
+          <div className="flex flex-col gap-2 w-full">
+            {/* Exhibitors */}
+            <div className="flex flex-row items-center gap-3 bg-[#C55F611A] rounded-lg p-2">
+              <SquareUser className="w-14 h-14 text-[#AF5456] shrink-0 mt-0.5 border rounded-full p-2" strokeWidth={1.1} />
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#121212] font-satoshi">
+                  200+
+                </span>
+                <p className="text-sm text-[#737373] font-satoshi leading-relaxed">
+                  Exhibitors
+                </p>
+              </div>
+            </div>
+
+            {/* Expected Guests */}
+            <div className="flex flex-row items-center gap-3 bg-[#C55F611A] rounded-lg p-2">
+              <UsersRound className="w-14 h-14 text-[#AF5456] shrink-0 mt-0.5 border rounded-full p-2" strokeWidth={1.1} />
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#121212] font-satoshi">
+                  10,000
+                </span>
+                <p className="text-sm text-[#737373] font-satoshi leading-relaxed">
+                  Expected Guests
+                </p>
+              </div>
+            </div>
+
+            {/* Days of Inspiration */}
+            <div className="flex flex-row items-center gap-3 bg-[#C55F611A] rounded-lg p-2">
+              <Calendar className="w-14 h-14 text-[#AF5456] shrink-0 mt-0.5 border rounded-full p-2" strokeWidth={1.1} />
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#121212] font-satoshi">
+                  3
+                </span>
+                <p className="text-sm text-[#737373] font-satoshi leading-relaxed">
+                  Days of Inspiration
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className='flex flex-wrap items-center gap-3'>
-            <Button
-              onClick={handleRegister}
-              className='rounded-full px-8 gap-2 to-blue-500 bg-linear-to-r from-blue-600 hover:from-blue-700 hover:to-blue-600 text-white'
-            >
-              Register <ArrowRight className='h-4 w-4' />
-            </Button>
-
-            <Button
-              variant='outline'
-              onClick={handleNavigate}
-              className='rounded-full w-40 justify-between px-6'
-            >
-              Full Details <ArrowRight className='h-4 w-4' />
-            </Button>
-          </div>
+          {/* Register button */}
+          <button
+            onClick={handleRegister}
+            className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200 w-full focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61]"
+            style={{
+              background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
+              textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.9';
+              e.currentTarget.style.boxShadow = '0px 4px 12px rgba(197, 95, 97, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            Register Now
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* Upcoming Events List */}
-      {events && events.length > 0 && (
-        <div className='mt-12'>
-          <h3 className='text-xl font-bold text-blue-600 mb-6'>
-            UPCOMING EVENTS
-          </h3>
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-            {events.slice(0, 3).map((upEvent) => (
-              <div
-                key={upEvent.id}
-                className='border rounded-xl overflow-hidden bg-white group'
-              >
-                <div
-                  className='h-48 overflow-hidden relative cursor-pointer group'
-                  onClick={() => openImage(upEvent.image)}
-                >
-                  <img
-                    src={upEvent.image || dtiLogo}
-                    alt={upEvent.title}
-                    className='w-full h-full object-cover group-hover:scale-105 transition-transform duration-300'
-                  />
-                  <div className='absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20'>
-                    <span className='text-white text-xs font-bold bg-black/50 px-3 py-1 rounded-full'>
-                      View Fullscreen
-                    </span>
-                  </div>
-                </div>
-                <div className='p-4'>
-                  <h5 className='font-bold text-gray-900 mb-2 line-clamp-1'>
-                    {upEvent.title}
-                  </h5>
-                  <p className='text-gray-600 text-sm line-clamp-2 mb-4'>
-                    {upEvent.description}
-                  </p>
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    className='w-full rounded-full'
-                    onClick={() =>
-                      navigate(`/event/${upEvent.id}`, {
-                        state: { event: upEvent },
-                      })
-                    }
-                  >
-                    Details <ArrowRight className='h-3 w-3 ml-2' />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {isImageOpen && (
         <ImageModal
-          src={selectedImage || dtiLogo}
+          src={event.image || dtiLogo}
           alt={event?.title}
-          onClose={() => {
-            setIsImageOpen(false);
-            setSelectedImage(null);
-          }}
+          onClose={() => setIsImageOpen(false)}
         />
       )}
     </div>

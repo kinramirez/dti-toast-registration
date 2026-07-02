@@ -2,32 +2,33 @@ import { useMemo, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
 
 import { usePhilippineAddress } from '../hooks/usePhilippineAddress';
 import { registerEvent } from '../api/registration';
 
+import RegistrationHero from './sections/RegistrationHero';
+import RegistrationSidebar from './sections/RegistrationSidebar';
+import TrustFooterStrip from './sections/TrustFooterStrip';
 import RegistrationStep1 from './sections/RegistrationStep1';
 import RegistrationStep2 from './sections/RegistrationStep2';
-import RegistrationStep3 from './sections/RegistrationStep3';
-import ConfirmationModal from '@/components/ui/ConfirmationModal';
+import RegistrationSuccess from './sections/RegistrationSuccess';
 
 const initialForm = {
-  // Step 1 — Basic Information
+  // Basic Information
   firstName: '',
   lastName: '',
   age: '',
   gender: 'Male',
 
-  // Step 1 — Contact Information
+  // Contact Information
   email: '',
   phone: '',
 
-  // Step 1 — Job Information
+  // Organization/Company
   company: '',
   position: '',
 
-  // Step 2 — Purpose of Visit
+  // Purpose of Visit
   role: '',
   eventDate: '',
   occasion: '',
@@ -42,14 +43,13 @@ const initialForm = {
   discoveryOther: '',
   province: '',
   city: '',
-  locationOther: '',
+  barangay: '',
   consent: false,
 
-  // Legacy fields (retained from original form, unused by new steps)
+  // Legacy fields (retained for backward compatibility)
   fullName: '',
   address: '',
   region: '',
-  barangay: '',
   contactNumber: '',
   purpose: 'General Shopper',
   source: 'DTI Social Media',
@@ -57,19 +57,12 @@ const initialForm = {
   agreed: false,
 };
 
-const mobilePattern = /^(?:09\d{9}|\+639\d{9})$/;
-const landlinePattern = /^(?:0|\+63)\d{2,3}\d{7,8}$/;
-
-function isPhContactNumber(value) {
-  const normalized = value.replace(/[\s()-]/g, '');
-  return mobilePattern.test(normalized) || landlinePattern.test(normalized);
-}
-
-// Step 1 validation schema
-const step1Schema = z.object({
+// Merged validation schema for all 24 Step 1 fields
+const registrationSchema = z.object({
+  // Basic Information
   firstName: z.string().trim().min(1, 'First name is required.'),
   lastName: z.string().trim().min(1, 'Last name is required.'),
-  age: z.string().min(1, 'Please select your age range.'),
+  age: z.string().min(1, 'Please select your age.'),
   gender: z.enum(['Male', 'Female']),
   email: z
     .string()
@@ -83,12 +76,15 @@ const step1Schema = z.object({
       /^9\d{9}$/,
       'Please enter a valid 10-digit number starting with 9 (e.g., 9123456789).',
     ),
+  province: z.string().min(1, 'Please select your region.'),
+  city: z.string().min(1, 'Please select your city.'),
+  barangay: z.string().min(1, 'Please select your barangay.'),
+
+  // Organization/Company
   company: z.string().optional(),
   position: z.string().optional(),
-});
 
-// Step 2 validation schema
-const step2Schema = z.object({
+  // Purpose of Visit
   role: z.string().min(1, 'Please select your role.'),
   eventDate: z.string().min(1, 'Please select your event date.'),
   occasion: z.string().min(1, 'Please select the occasion.'),
@@ -98,22 +94,11 @@ const step2Schema = z.object({
   occasionOther: z.string().optional(),
   suppliersOther: z.string().optional(),
   specificSuppliers: z.string().optional(),
-  lumiPromos: z.string().optional(),
+  lumiPromos: z.string().min(1, 'Please select your Lumi Candles preference.'),
   discoveryChannel: z
     .string()
     .min(1, 'Please select how you heard about the event.'),
   discoveryOther: z.string().optional(),
-  province: z.string().min(1, 'Please select your province.'),
-  city: z.string().min(1, 'Please select your city.'),
-  locationOther: z
-    .string()
-    .trim()
-    .min(1, 'Please specify your province/city.'),
-  consent: z.literal(true, {
-    errorMap: () => ({
-      message: 'You must agree to receive updates and communications.',
-    }),
-  }),
 }).superRefine((data, ctx) => {
   if (data.occasion === 'Other' && !data.occasionOther?.trim()) {
     ctx.addIssue({
@@ -143,7 +128,6 @@ export default function EventFormPage() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [touched, setTouched] = useState({});
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
   const location = useLocation();
@@ -163,30 +147,20 @@ export default function EventFormPage() {
     addressError,
   } = usePhilippineAddress();
 
-  // Step 1 validation errors
+  // Merged validation errors for all Step 1 fields
   const step1Errors = useMemo(() => {
-    const result = step1Schema.safeParse({
+    const result = registrationSchema.safeParse({
       firstName: form.firstName,
       lastName: form.lastName,
       age: form.age,
       gender: form.gender,
       email: form.email,
       phone: form.phone,
+      province: form.province,
+      city: form.city,
+      barangay: form.barangay,
       company: form.company,
       position: form.position,
-    });
-    if (result.success) return {};
-    const nextErrors = {};
-    for (const issue of result.error.issues) {
-      const field = issue.path[0];
-      nextErrors[field] = issue.message;
-    }
-    return nextErrors;
-  }, [form]);
-
-  // Step 2 validation errors
-  const step2Errors = useMemo(() => {
-    const result = step2Schema.safeParse({
       role: form.role,
       eventDate: form.eventDate,
       occasion: form.occasion,
@@ -199,16 +173,22 @@ export default function EventFormPage() {
       lumiPromos: form.lumiPromos,
       discoveryChannel: form.discoveryChannel,
       discoveryOther: form.discoveryOther,
-      province: form.province,
-      city: form.city,
-      locationOther: form.locationOther,
-      consent: form.consent,
     });
-    if (result.success) return {};
+    if (result.success) {
+      // Consent is validated separately (only on Step 2)
+      if (!form.consent) {
+        return { consent: 'You must agree to the terms to continue.' };
+      }
+      return {};
+    }
     const nextErrors = {};
     for (const issue of result.error.issues) {
       const field = issue.path[0];
       nextErrors[field] = issue.message;
+    }
+    // Also check consent when other fields have errors
+    if (!form.consent) {
+      nextErrors.consent = 'You must agree to the terms to continue.';
     }
     return nextErrors;
   }, [form]);
@@ -220,16 +200,12 @@ export default function EventFormPage() {
       form.email, form.phone, form.company, form.position,
       form.role, form.eventDate, form.occasion, form.guests, form.budget,
       form.specificSuppliers, form.lumiPromos, form.discoveryChannel,
-      form.discoveryOther, form.province, form.locationOther,
+      form.discoveryOther, form.province, form.city, form.barangay,
       form.occasionOther, form.suppliersOther,
     ];
     return nonEmptyFields.some((v) => v !== '' && v !== 'Male')
       || (Array.isArray(form.suppliers) && form.suppliers.length > 0);
   }, [form]);
-
-  function markTouched(name) {
-    setTouched((prev) => ({ ...prev, [name]: true }));
-  }
 
   function onChange(e) {
     const { name, value, type, checked } = e.target;
@@ -239,34 +215,7 @@ export default function EventFormPage() {
     }));
   }
 
-  function onRegionChange(nextCode) {
-    setRegionCode(nextCode);
-    const selected = regionOptions.find((r) => r.region_code === nextCode);
-    setForm((prev) => ({
-      ...prev,
-      region: selected?.region_name ?? '',
-      city: '',
-      barangay: '',
-    }));
-  }
-
-  function onCityChange(nextCode) {
-    setCityCode(nextCode);
-    const selected = cityOptions.find((c) => c.city_code === nextCode);
-    setForm((prev) => ({
-      ...prev,
-      city: selected?.city_name ?? '',
-      barangay: '',
-    }));
-  }
-
-  function onBarangayChange(nextCode) {
-    setBarangayCode(nextCode);
-    const selected = barangayOptions.find((b) => b.brgy_code === nextCode);
-    setForm((prev) => ({ ...prev, barangay: selected?.brgy_name ?? '' }));
-  }
-
-  // Step 1 → Confirmation Modal
+  // Step 1 → Step 2 (no confirmation modal)
   function handleNextStep1() {
     // Mark all Step 1 fields as touched
     setTouched((prev) => ({
@@ -277,61 +226,33 @@ export default function EventFormPage() {
       gender: true,
       email: true,
       phone: true,
-    }));
-
-    const result = step1Schema.safeParse({
-      firstName: form.firstName,
-      lastName: form.lastName,
-      age: form.age,
-      gender: form.gender,
-      email: form.email,
-      phone: form.phone,
-      company: form.company,
-      position: form.position,
-    });
-
-    if (result.success) {
-      setShowConfirmModal(true);
-    }
-  }
-
-  function handleCancelModal() {
-    setShowConfirmModal(false);
-  }
-
-  function handleContinueModal() {
-    setShowConfirmModal(false);
-    setStep(2);
-  }
-
-  function handleBack() {
-    setStep((prev) => Math.max(1, prev - 1));
-  }
-
-  // Step 2 → Submit
-  function handleSubmitStep2(e) {
-    e.preventDefault();
-    setSubmitError(null);
-
-    // Mark all Step 2 fields as touched
-    setTouched((prev) => ({
-      ...prev,
+      province: true,
+      city: true,
+      barangay: true,
       role: true,
       eventDate: true,
       occasion: true,
       guests: true,
       budget: true,
       suppliers: true,
+      lumiPromos: true,
       discoveryChannel: true,
-      province: true,
-      city: true,
-      locationOther: true,
-      consent: true,
       ...(form.occasion === 'Other' ? { occasionOther: true } : {}),
       ...(form.suppliers.includes('Other') ? { suppliersOther: true } : {}),
     }));
 
-    const result = step2Schema.safeParse({
+    const result = registrationSchema.safeParse({
+      firstName: form.firstName,
+      lastName: form.lastName,
+      age: form.age,
+      gender: form.gender,
+      email: form.email,
+      phone: form.phone,
+      province: form.province,
+      city: form.city,
+      barangay: form.barangay,
+      company: form.company,
+      position: form.position,
       role: form.role,
       eventDate: form.eventDate,
       occasion: form.occasion,
@@ -344,15 +265,63 @@ export default function EventFormPage() {
       lumiPromos: form.lumiPromos,
       discoveryChannel: form.discoveryChannel,
       discoveryOther: form.discoveryOther,
+    });
+
+    if (result.success) {
+      setStep(2);
+      window.scrollTo(0, 0);
+    }
+  }
+
+  function handleEdit(sectionName) {
+    setStep(1);
+    // After the step transition animation completes, scroll to the section
+    setTimeout(() => {
+      const el = document.getElementById(sectionName);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 350); // Wait for framer-motion animation (300ms) + small buffer
+  }
+
+  // Step 2 → Submit
+  function handleSubmitStep2(e) {
+    e.preventDefault();
+    setSubmitError(null);
+
+    // Mark consent as touched
+    setTouched((prev) => ({ ...prev, consent: true }));
+
+    // Validate all Step 1 fields
+    const result = registrationSchema.safeParse({
+      firstName: form.firstName,
+      lastName: form.lastName,
+      age: form.age,
+      gender: form.gender,
+      email: form.email,
+      phone: form.phone,
       province: form.province,
       city: form.city,
-      locationOther: form.locationOther,
-      consent: form.consent,
+      barangay: form.barangay,
+      company: form.company,
+      position: form.position,
+      role: form.role,
+      eventDate: form.eventDate,
+      occasion: form.occasion,
+      guests: form.guests,
+      budget: form.budget,
+      suppliers: form.suppliers,
+      occasionOther: form.occasionOther,
+      suppliersOther: form.suppliersOther,
+      specificSuppliers: form.specificSuppliers,
+      lumiPromos: form.lumiPromos,
+      discoveryChannel: form.discoveryChannel,
+      discoveryOther: form.discoveryOther,
     });
 
     if (!result.success) return;
 
-    // Build payload and submit
+    // Validate consent separately (only on Step 2)
+    if (!form.consent) return;
+
     submitRegistration();
   }
 
@@ -372,7 +341,7 @@ export default function EventFormPage() {
       mobileNumber: form.phone,
       company: form.company.trim() || null,
       position: form.position.trim() || null,
-      // Step 2 fields
+      // Purpose fields
       myRoleInOccasion: form.role,
       eventDate: form.eventDate,
       occasionPlanningFor: form.occasion,
@@ -386,7 +355,7 @@ export default function EventFormPage() {
       discoveryOther: form.discoveryOther.trim() || null,
       province: form.province,
       city: form.city,
-      locationOther: form.locationOther.trim(),
+      locationOther: '', // Hardcoded empty string — field removed per Figma
       consent: form.consent,
       // Legacy fields (for backward compatibility)
       address: form.address || fullName,
@@ -411,6 +380,7 @@ export default function EventFormPage() {
       const data = await registerEvent(payload);
       console.log('Registration response:', data);
       setStep(3);
+      window.scrollTo(0, 0);
     } catch (error) {
       console.error(error);
       setSubmitError('Registration failed. Please try again.');
@@ -432,15 +402,6 @@ export default function EventFormPage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasData, step]);
 
-  // Scroll to top on step transition (via onAnimationComplete)
-  function handleStep1ExitComplete() {
-    window.scrollTo(0, 0);
-  }
-
-  function handleStep2ExitComplete() {
-    window.scrollTo(0, 0);
-  }
-
   function handleBackToHome() {
     setForm(initialForm);
     setIsSubmitting(false);
@@ -454,77 +415,106 @@ export default function EventFormPage() {
   }
 
   return (
-    <div className='relative z-10'>
-      <AnimatePresence mode='wait'>
-        {step === 1 && (
-          <motion.div
-            key='step1'
-            {...stepTransition}
-            onAnimationComplete={handleStep1ExitComplete}
-          >
-            <RegistrationStep1
-              form={form}
-              onChange={onChange}
-              errors={step1Errors}
-              touched={touched}
-              onNext={handleNextStep1}
-            />
-          </motion.div>
-        )}
+    <div className='relative z-10 bg-white'>
+      {/* ── Hero Band (Steps 1 & 2 only; Step 3 has its own hero) ── */}
+      {(step === 1 || step === 2) && <RegistrationHero eventId={eventGuId} />}
 
-        {step === 2 && (
-          <motion.div
-            key='step2'
-            {...stepTransition}
-            onAnimationComplete={handleStep2ExitComplete}
-          >
-            <RegistrationStep2
-              form={form}
-              onChange={onChange}
-              errors={step2Errors}
-              touched={touched}
-              onSubmit={handleSubmitStep2}
-              onBack={handleBack}
-              isSubmitting={isSubmitting}
-              regionCode={regionCode}
-              setRegionCode={setRegionCode}
-              cityCode={cityCode}
-              setCityCode={setCityCode}
-              regionOptions={regionOptions}
-              cityOptions={cityOptions}
-              addressError={addressError}
-              submitError={submitError}
-            />
-          </motion.div>
-        )}
+      {/* ── Steps 1 & 2: Two-Column Layout ── */}
+      {(step === 1 || step === 2) && (
+        <>
+          <div className='w-full max-w-[1600px] mx-auto px-8 py-12 flex flex-col lg:flex-row gap-8'>
+            {/* Left: Form Card */}
+            <div className='flex-1 lg:max-w-[977px]'>
+              <AnimatePresence mode='wait'>
+                {step === 1 && (
+                  <motion.div
+                    key='step1'
+                    {...stepTransition}
+                  >
+                    <RegistrationStep1
+                      form={form}
+                      onChange={onChange}
+                      errors={step1Errors}
+                      touched={touched}
+                      onNext={handleNextStep1}
+                      regionCode={regionCode}
+                      setRegionCode={setRegionCode}
+                      cityCode={cityCode}
+                      setCityCode={setCityCode}
+                      barangayCode={barangayCode}
+                      setBarangayCode={setBarangayCode}
+                      regionOptions={regionOptions}
+                      cityOptions={cityOptions}
+                      barangayOptions={barangayOptions}
+                      addressError={addressError}
+                    />
+                  </motion.div>
+                )}
 
-        {step === 3 && (
+                {step === 2 && (
+                  <motion.div
+                    key='step2'
+                    {...stepTransition}
+                  >
+                    <RegistrationStep2
+                      form={form}
+                      onChange={onChange}
+                      errors={step1Errors}
+                      touched={touched}
+                      onSubmit={handleSubmitStep2}
+                      onEdit={handleEdit}
+                      isSubmitting={isSubmitting}
+                      submitError={submitError}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Right: Sidebar */}
+            {step === 1 && <RegistrationSidebar />}
+            {step === 2 && <RegistrationSidebar showWhyRegister={false} />}
+          </div>
+
+          {/* ── Trust Footer Strip ── */}
+          <div className='w-full max-w-[1600px] mx-auto px-8 pb-12'>
+            <TrustFooterStrip />
+          </div>
+
+          {/* ── Site Footer (registration page only) ── */}
+          <footer
+            className='w-full flex items-center justify-center font-satoshi'
+            style={{ backgroundColor: '#F1F1F1', height: '43px' }}
+          >
+            <span className='text-[12px] text-neutral-gray'>
+              &copy; 2026 Toast Wedding Fair. All rights reserved
+            </span>
+          </footer>
+        </>
+      )}
+
+      {/* ── Step 3: Full-width Success Page (no two-column wrapper) ── */}
+      {step === 3 && (
+        <AnimatePresence mode='wait'>
           <motion.div key='step3' {...stepTransition}>
-            <RegistrationStep3 onBackToHome={handleBackToHome} />
+            <RegistrationSuccess
+              userEmail={form.email}
+              event={event}
+              onBackToHome={handleBackToHome}
+            />
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>
+      )}
 
-      {/* Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showConfirmModal}
-        onCancel={handleCancelModal}
-        onContinue={handleContinueModal}
-        title='Next Step?'
-        body='Save and continue to Purpose of Visit. Help us prep the best suppliers for you.'
-        cancelLabel='Cancel'
-        continueLabel='Continue'
-        icon={<ArrowRight className='w-5 h-5' />}
-      />
-
+      {/* ── Loading Overlay ── */}
       {isSubmitting && (
         <div className='fixed inset-0 z-50 bg-black/70'>
           <div className='flex h-full w-full items-center justify-center px-6'>
             <div className='flex flex-col items-center justify-center'>
               <div className='mt-6 flex items-center justify-center gap-2'>
-                <span className='h-2 w-2 rounded-full bg-brand-blue animate-bounce [animation-delay:-0.2s]' />
-                <span className='h-2 w-2 rounded-full bg-brand-blue animate-bounce [animation-delay:-0.1s]' />
-                <span className='h-2 w-2 rounded-full bg-brand-blue animate-bounce' />
+                <span className='h-2 w-2 rounded-full bg-[#C55F61] animate-bounce [animation-delay:-0.2s]' />
+                <span className='h-2 w-2 rounded-full bg-[#C55F61] animate-bounce [animation-delay:-0.1s]' />
+                <span className='h-2 w-2 rounded-full bg-[#C55F61] animate-bounce' />
               </div>
             </div>
           </div>

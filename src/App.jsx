@@ -1,4 +1,4 @@
-import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import './App.css'
 import { useEffect } from 'react'
 
@@ -31,11 +31,15 @@ function AppFrame() {
   const location = useLocation()
   const isEventPage = location.pathname.startsWith('/event') || location.pathname === '/' || location.pathname === '/contact'
   const isEventRegisterPage = location.pathname === '/event/register'
+  const isEventDetailsPage = /^\/event\/[^/]+$/.test(location.pathname) && !isEventRegisterPage
   const isContactPage = location.pathname === '/contact'
 
   const getTitle = () => {
     if (isContactPage) return 'Contact Us'
-    if (isEventPage && !isEventRegisterPage) return 'Events'
+    if (isEventRegisterPage) return null
+    if (isEventDetailsPage) return null
+    if (location.pathname === '/') return null
+    if (isEventPage) return 'Events'
     return null
   }
 
@@ -45,15 +49,7 @@ function AppFrame() {
       {isEventPage ? (
         <EventsHeader
           title={getTitle()}
-          breadcrumb={
-            isEventRegisterPage ? (
-              <>
-                <Link to="/" className="hover:text-white">Events</Link>
-                <span className="px-2">/</span>
-                <span className="text-brand-blue">Buy Ticket</span>
-              </>
-            ) : undefined
-          }
+          breadcrumb={undefined}
         />
       ) : (
         <Header />
@@ -68,7 +64,7 @@ function AppFrame() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      <Footer />
+      {!isEventRegisterPage && <Footer />}
     </div>
   )
 }
