@@ -1,4 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Saira:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Corinthia&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Satoshi:wght@400;500;700&display=swap');
 @import 'tailwindcss';
 @source "../src/**/*.{js,ts,jsx,tsx}";
 @plugin "tailwindcss-animate";
@@ -233,6 +236,22 @@
   --color-border-line: #DADADA;
   --color-text-dark: #434343;
 
+  /* Event Page design tokens */
+  --color-brand-rose: #C55F61;
+  --color-brand-rose-dark: #AF5456;
+  --color-brand-rose-light: #F57E80;
+  --color-brand-rose-bg: #FFF6F3;
+  --color-text-meta: #606060;
+  --color-text-muted: #5D5D5D;
+  --color-text-secondary: #737373;
+  --color-border-light: #ACACAC;
+  --color-icon-stroke: #E8E8E8;
+  --color-star: #FFB24E;
+  --color-footer-link: #FEB5B6;
+  --color-brand-rose-bg-10: rgba(197, 95, 97, 0.1);
+  --color-brand-rose-bg-15: rgba(197, 95, 97, 0.15);
+  --color-brand-rose-bg-20: rgba(197, 95, 97, 0.2);
+
   /* Shadcn colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -267,7 +286,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   /* Max width */
-  --max-width-container: 80rem;
+  --max-width-container: 108rem;
 
   /* Height */
   --height-header: 575px;
@@ -275,7 +294,9 @@
   /* Font families */
   --font-saira: 'Saira', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
   --font-kanit: 'Kanit', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-satoshi: 'Saira', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-satoshi: 'Satoshi', 'Saira', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-cormorant: 'Cormorant Garamond', serif;
+  --font-corinthia: 'Corinthia', cursive;
 
   /* Font sizes */
   --font-size-hero: 128px;
@@ -355,4 +376,35 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* Toast Notification Animations */
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toastSlideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.toast-enter {
+  animation: toastSlideIn 0.3s ease-out forwards;
+}
+
+.toast-exit {
+  animation: toastSlideOut 0.3s ease-in forwards;
 }
