@@ -1,31 +1,64 @@
-import React, { useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import {
-  // Calendar,
-  CalendarCheck,
-  BookOpenText,
-  CalendarX,
-  MapPin,
-  ArrowRight,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Star, ArrowRight, Share2 } from 'lucide-react';
 import { normalizeEvent } from '@/lib/utils/eventUtils';
+import { getEventById } from '@/api/events';
 import dtiLogo from '@/assets/dtilogo.png';
 import ImageModal from '@/components/ui/ImageModal';
-import { formatDate, formatTime } from '@/lib/utils/eventUtils';
+import EventOverviewCard from '@/features/events/components/EventOverviewCard';
+import WhatToExpect from '@/features/events/components/WhatToExpect';
+import VenueSection from '@/features/events/components/VenueSection';
+import CtaBanner from '@/features/events/components/CtaBanner';
+import ContactStrip from '@/features/events/components/ContactStrip';
 
 const EventDetailsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isImageOpen, setIsImageOpen] = useState(false);
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const { id } = useParams();
 
-  const event = useMemo(() => {
-    const stateEvent = location.state?.event;
-    return stateEvent ? normalizeEvent(stateEvent) : null;
+  const [isImageOpen, setIsImageOpen] = useState(false);
+  const [fetchedEvent, setFetchedEvent] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
+
+  // Path A: event from navigation state (instant)
+  const stateEvent = useMemo(() => {
+    const se = location.state?.event;
+    return se ? normalizeEvent(se) : null;
   }, [location.state]);
+
+  // Path B: fetch by ID if no state (direct URL / bookmark / refresh)
+  useEffect(() => {
+    if (stateEvent || !id) return;
+
+    let cancelled = false;
+    setIsLoading(true);
+    setFetchError(null);
+
+    getEventById(id)
+      .then((ev) => {
+        if (!cancelled) {
+          setFetchedEvent(ev);
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setFetchError(
+            err?.response?.data?.message ||
+              err?.message ||
+              'Failed to load event details.',
+          );
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, stateEvent]);
+
+  const event = stateEvent || fetchedEvent;
 
   const handleRegister = () => {
     if (event) {
@@ -33,142 +66,228 @@ const EventDetailsPage = () => {
     }
   };
 
-  const DESCRIPTION_LIMIT = 200;
-  const shouldTruncate =
-    event?.description && event.description.length > DESCRIPTION_LIMIT;
-  const displayDescription =
-    isDescriptionExpanded || !shouldTruncate
-      ? event?.description
-      : event?.description?.slice(0, DESCRIPTION_LIMIT) + '...';
+  // Loading state
+  if (isLoading) {
+    return (
+      <section className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center justify-center py-32 text-center">
+          <div className="w-8 h-8 rounded-full border-4 border-[rgba(197,95,97,0.2)] border-t-[#C55F61] animate-spin mb-4" />
+          <p className="text-[#737373] text-sm font-satoshi">
+            Loading event…
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  // Error state
+  if (fetchError) {
+    return (
+      <section className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center justify-center py-32 text-center px-4">
+          <h3 className="text-3xl font-bold text-[#5D5D5D] mb-4 font-satoshi">
+            Something Went Wrong
+          </h3>
+          <p className="text-[#737373] max-w-lg text-sm leading-relaxed font-satoshi mb-6">
+            {fetchError}
+          </p>
+          <button
+            onClick={() => {
+              setFetchError(null);
+              setIsLoading(true);
+              getEventById(id)
+                .then((ev) => {
+                  setFetchedEvent(ev);
+                  setIsLoading(false);
+                })
+                .catch((err) => {
+                  setFetchError(
+                    err?.response?.data?.message ||
+                      err?.message ||
+                      'Failed to load event details.',
+                  );
+                  setIsLoading(false);
+                });
+            }}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61]"
+            style={{
+              background:
+                'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
+              textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
+            }}
+          >
+            Try Again
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  // Not found state
+  if (!event) {
+    return (
+      <section className="min-h-screen flex items-center justify-center bg-white">
+        <div className="mt-10 rounded-2xl border bg-white p-8 text-center shadow-sm mx-4">
+          <h3 className="text-xl font-semibold text-[#434343] mb-2 font-satoshi">
+            Event not found
+          </h3>
+          <button
+            onClick={() => navigate('/')}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61]"
+            style={{
+              background:
+                'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
+              textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
+            }}
+          >
+            Go back
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section className='bg-gradient-to-b from-slate-50 to-white min-h-screen pb-16'>
-      <div className='max-w-6xl mx-auto px-4 sm:px-6 lg:px-8'>
-        {!event ? (
-          <div className='mt-10 rounded-2xl border bg-white p-8 text-center shadow-sm'>
-            <h3 className='text-xl font-semibold text-gray-700 mb-2'>
-              Event not found
-            </h3>
-            <Button onClick={() => navigate('/event')}>Go back</Button>
+    <div className="bg-white">
+      {/* ============================================
+          HERO SECTION
+          Two-column: text left + full-bleed image right
+          ============================================ */}
+      <section
+        className="relative overflow-hidden"
+        style={{
+          background:
+            'linear-gradient(180.87deg, #FFF6F3 0%, transparent 100%)',
+        }}
+      >
+        <div className="max-w-container mx-auto px-8 max-sm:px-6">
+          <div className="grid lg:grid-cols-[1fr_864px] items-center min-h-[500px] lg:min-h-[600px]">
+            {/* LEFT — Text Column */}
+            <div className="py-8 lg:py-16 space-y-4 lg:space-y-6">
+              {/* Breadcrumb */}
+              <div>
+                <Link
+                  to="/"
+                  className="inline-flex items-center text-[#737373] hover:text-[#C55F61] transition-colors font-satoshi font-bold text-base leading-[22px]"
+                >
+                  ‹ Event Details
+                </Link>
+              </div>
+
+              {/* Featured Badge */}
+              <div
+                className="inline-flex items-center gap-1.5 bg-[#C55F61] text-white px-3 py-1.5 rounded text-xs font-bold font-satoshi"
+                style={{
+                  boxShadow: '0px 4px 4px rgba(197, 95, 97, 0.15)',
+                }}
+              >
+                <Star className="w-3.5 h-3.5 fill-[#FFB24E] text-[#FFB24E]" />
+                FEATURED EVENT
+              </div>
+
+              {/* Title */}
+              <h1 className="font-cormorant font-bold text-[48px] sm:text-[56px] lg:text-[64px] leading-[1.2] lg:leading-[78px] text-[#121212]">
+                {event.title}
+              </h1>
+
+              {/* Script Tagline */}
+              <p className="font-corinthia text-[64px] sm:text-[80px] lg:text-[96px] leading-[1.2] lg:leading-[115px] text-[#C55F61]">
+                Your forever begins here
+              </p>
+
+              {/* Description */}
+              <p className="font-satoshi font-medium text-base leading-[22px] text-[#606060] max-w-[635px]">
+                {event.description ||
+                  'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.'}
+              </p>
+
+              {/* CTA Row */}
+              <div className="flex flex-wrap items-center gap-6">
+                <button
+                  onClick={handleRegister}
+                  className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-lg text-white font-satoshi font-bold text-base leading-[22px] transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61]"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
+                    textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = '0.9';
+                    e.currentTarget.style.boxShadow =
+                      '0px 4px 12px rgba(197, 95, 97, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  Register Now
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                {/* Share Event — placeholder no-op */}
+                <button className="inline-flex items-center gap-2 text-[#C55F61] font-satoshi font-bold text-base leading-[22px] hover:opacity-80 transition-opacity">
+                  <Share2 className="w-4 h-4" />
+                  Share Event
+                </button>
+              </div>
+            </div>
+
+            {/* RIGHT — Hero Image (full bleed to right edge) */}
+            <div className="relative lg:absolute lg:right-0 lg:top-0 lg:h-full">
+              <div
+                onClick={() => setIsImageOpen(true)}
+                className="relative w-full lg:w-[864px] h-[300px] sm:h-[400px] lg:h-full cursor-pointer group overflow-hidden"
+              >
+                <img
+                  src={event.image || dtiLogo}
+                  alt={event.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                />
+                {/* Blush gradient scrim on left edge of image for text legibility */}
+                <div
+                  className="absolute inset-y-0 left-0 w-32 lg:w-48 pointer-events-none"
+                  style={{
+                    background:
+                      'linear-gradient(90deg, #FFF6F3 0%, transparent 100%)',
+                  }}
+                />
+              </div>
+            </div>
           </div>
-        ) : (
-          <>
-            {/* HERO IMAGE */}
-            <div
-              onClick={() => setIsImageOpen(true)}
-              className='relative mt-6 rounded-3xl overflow-hidden cursor-pointer group'
-            >
-              <img
-                src={event.image || dtiLogo}
-                alt={event.title}
-                className='w-full object-contain group-hover:scale-105 transition duration-500'
-              />
+        </div>
+      </section>
 
-              {/* DARK OVERLAY */}
-              <div className='absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent' />
-
-              {/* TITLE OVER IMAGE */}
-              <div className='absolute bottom-0 p-6 sm:p-8 text-white'>
-                {/* <span className='text-xs uppercase tracking-widest text-blue-300'>
-                  {event.category}
-                </span> */}
-                <h1 className='text-2xl sm:text-3xl lg:text-4xl font-bold mt-2 max-w-2xl'>
-                  {event.title}
-                </h1>
-              </div>
-            </div>
-
-            {/* MAIN CONTENT */}
-            <div className='grid lg:grid-cols-[1fr_360px] gap-8 mt-8'>
-              {/* LEFT CONTENT */}
-              <div className='space-y-6'>
-                <div className='bg-white rounded-2xl p-5 sm:p-6 shadow-sm border'>
-                  {/* META */}
-                  <div className='flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 mb-6'>
-                    <div className='flex items-center gap-2'>
-                      <CalendarCheck className='h-5 w-5 text-blue-500' />
-                      <span className='text-sm sm:text-base'>
-                        Start: {formatDate(event.startDate)} |{' '}
-                        {formatTime(event.event_start_time)}
-                      </span>
-                    </div>
-                    <div className='flex items-center gap-2'>
-                      <CalendarX className='h-5 w-5 text-blue-500' />
-                      <span className='text-sm sm:text-base'>
-                        End: {formatDate(event.endDate)} |{' '}
-                        {formatTime(event.event_end_time)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className='flex items-center gap-2 mb-4'>
-                    <MapPin className='h-5 w-5 text-blue-500' />
-                    <span className='text-sm sm:text-base'>
-                      {event.location}
-                    </span>
-                  </div>
-
-                  {/* DESCRIPTION */}
-                  <div className='space-y-4 text-slate-700'>
-                    {/* <p className='text-sm sm:text-base leading-relaxed'>
-                      {displayDescription}
-                    </p> */}
-                    <div className='flex items-center gap-2'>
-                      <BookOpenText className='h-5 w-5 text-blue-500' />
-                      <span className='text-sm sm:text-base'>
-                        {displayDescription}
-                      </span>
-                    </div>
-
-                    {shouldTruncate && (
-                      <button
-                        onClick={() =>
-                          setIsDescriptionExpanded(!isDescriptionExpanded)
-                        }
-                        className='text-blue-600 text-sm font-semibold flex items-center gap-1'
-                      >
-                        {isDescriptionExpanded ? (
-                          <>
-                            See less <ChevronUp className='h-4 w-4' />
-                          </>
-                        ) : (
-                          <>
-                            See more <ChevronDown className='h-4 w-4' />
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* RIGHT SIDEBAR CTA */}
-              <div className='lg:sticky lg:top-24 h-fit'>
-                <div className='bg-white rounded-2xl border shadow-lg p-6 space-y-6'>
-                  <div>
-                    <p className='text-sm text-slate-500'>Secure your slot</p>
-                    <h3 className='text-xl font-bold text-slate-900'>
-                      Join this event
-                    </h3>
-                  </div>
-
-                  <Button
-                    onClick={handleRegister}
-                    className='w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-base'
-                  >
-                    {event.buttonText || 'Register Now'}
-                    <ArrowRight className='ml-2 h-4 w-4' />
-                  </Button>
-
-                  <p className='text-xs text-slate-400 text-center'>
-                    Limited slots available
-                  </p>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+      {/* ============================================
+          OVERVIEW CARD (floating over hero bottom)
+          ============================================ */}
+      <div className="relative -mt-12 lg:-mt-16 z-10 px-8 max-sm:px-6 pb-8">
+        <EventOverviewCard event={event} />
       </div>
 
+      {/* ============================================
+          WHAT TO EXPECT
+          ============================================ */}
+      <WhatToExpect />
+
+      {/* ============================================
+          VENUE SECTION
+          ============================================ */}
+      <VenueSection event={event} />
+
+      {/* ============================================
+          MID-PAGE CTA BANNER
+          ============================================ */}
+      <CtaBanner event={event} />
+
+      {/* ============================================
+          CONTACT STRIP
+          ============================================ */}
+      <ContactStrip />
+
+      {/* ============================================
+          IMAGE MODAL (conditional)
+          ============================================ */}
       {isImageOpen && (
         <ImageModal
           src={event?.image || dtiLogo}
@@ -176,7 +295,7 @@ const EventDetailsPage = () => {
           onClose={() => setIsImageOpen(false)}
         />
       )}
-    </section>
+    </div>
   );
 };
 
