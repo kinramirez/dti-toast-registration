@@ -21,33 +21,41 @@ const EventPagination = ({ currentPage, totalPages, onPageChange }) => {
   };
 
   return (
-    <div className="flex justify-center items-center gap-4 mt-12 text-sm text-gray-500 font-medium">
-      <button 
+    <div className="flex justify-center items-center gap-4 mt-12 text-sm text-[#737373] font-medium font-satoshi">
+      <button
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}
-        className="hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
+        className="hover:text-[#C55F61] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        aria-label="Previous page"
       >
         <ChevronLeft className="h-5 w-5" />
       </button>
 
-      {getPageNumbers().map((page, index) => (
+      {getPageNumbers().map((page, index) =>
         page === '...' ? (
-          <span key={`ellipsis-${index}`}>...</span>
+          <span key={`ellipsis-${index}`} className="text-[#ACACAC]">
+            ...
+          </span>
         ) : (
           <button
             key={page}
             onClick={() => onPageChange(page)}
-            className={`${currentPage === page ? 'text-blue-600 font-bold' : 'hover:text-blue-600'}`}
+            className={`transition-colors ${
+              currentPage === page
+                ? 'text-[#C55F61] font-bold'
+                : 'hover:text-[#C55F61]'
+            }`}
           >
             {page}
           </button>
-        )
-      ))}
+        ),
+      )}
 
-      <button 
+      <button
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage === totalPages}
-        className="hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
+        className="hover:text-[#C55F61] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        aria-label="Next page"
       >
         <ChevronRight className="h-5 w-5" />
       </button>
