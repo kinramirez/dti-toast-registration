@@ -34,7 +34,7 @@ export default function FormField({
 }) {
   return (
     <div className='flex flex-col gap-1'>
-      <label className='text-[#1877F2] mb-2 block text-base font-medium'>
+      <label className='text-[#121212] mb-2 block text-[14px] font-medium font-satoshi'>
         {label}
         {labelIcon && (
           <span className='inline-flex items-center ml-1.5'>{labelIcon}</span>
@@ -44,9 +44,9 @@ export default function FormField({
       <div className='relative'>
         <input
           className={cn(
-            'w-full bg-[#F1F1F1] border-none rounded-lg px-5 py-4 text-sm text-slate-800 outline-none transition-all',
-            'placeholder:text-[#808080]',
-            'focus:ring-2 focus:ring-[#1877F2] focus:ring-offset-1',
+            'w-full bg-white border border-[#ACACAC] rounded-[6px] px-[17px] h-[52px] text-sm text-slate-800 outline-none transition-all',
+            'placeholder:text-[#ACACAC]',
+            'focus:ring-2 focus:ring-[#C55F61] focus:ring-offset-1',
             error
               ? 'ring-2 ring-red-100 focus:ring-red-200'
               : '',
@@ -58,7 +58,7 @@ export default function FormField({
           {...props}
         />
         {icon && (
-          <div className='pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#808080]'>
+          <div className='pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#606060]'>
             {icon}
           </div>
         )}

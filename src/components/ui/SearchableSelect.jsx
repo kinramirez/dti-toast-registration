@@ -51,7 +51,7 @@ export default function SearchableSelect({
       ref={containerRef}
       onBlur={handleBlur}
     >
-      <label className='text-[#1877F2] mb-2 block text-base font-medium'>
+      <label className='text-[#121212] mb-2 block text-[14px] font-medium font-satoshi'>
         {label}
         {required && <RequiredMark />}
       </label>
@@ -66,12 +66,12 @@ export default function SearchableSelect({
             if (!disabled) setOpen(true);
           }}
           onChange={(e) => setQuery(e.target.value)}
-          className={`w-full bg-[#F1F1F1] border-none rounded-lg pl-5 pr-10 py-4 text-sm outline-none transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 focus:ring-2 focus:ring-[#1877F2] focus:ring-offset-1 ${
-            !selectedLabel && !open ? 'text-[#808080]' : 'text-slate-800'
+          className={`w-full bg-white border border-[#ACACAC] rounded-[6px] pl-[17px] pr-10 h-[52px] text-sm outline-none transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 focus:ring-2 focus:ring-[#C55F61] focus:ring-offset-1 ${
+            !selectedLabel && !open ? 'text-[#ACACAC]' : 'text-slate-800'
           }`}
         />
         <div
-          className={`pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#808080] ${
+          className={`pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#606060] ${
             disabled ? 'opacity-60' : ''
           }`}
         >
@@ -105,9 +105,9 @@ export default function SearchableSelect({
                   onKeyDown={(e) =>
                     e.key === 'Enter' && handleSelect(o.value)
                   }
-                  className={`px-4 py-2 cursor-pointer hover:bg-blue-50 ${
+                  className={`px-4 py-2 cursor-pointer hover:bg-rose-50 ${
                     o.value === value
-                      ? 'bg-blue-100 text-brand-blue font-medium'
+                      ? 'bg-rose-100 text-[#C55F61] font-medium'
                       : 'text-slate-800'
                   }`}
                 >

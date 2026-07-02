@@ -31,20 +31,20 @@ export default function FormSelect({
 
   return (
     <div className='flex flex-col gap-1'>
-      <label className='text-[#1877F2] mb-2 block text-base font-medium'>
+      <label className='text-[#121212] mb-2 block text-[14px] font-medium font-satoshi'>
         {label}
         {required && <RequiredMark />}
       </label>
       <div className='relative'>
         <select
           className={cn(
-            'w-full appearance-none bg-[#F1F1F1] border-none rounded-lg pl-5 pr-10 py-4 text-sm outline-none transition-all',
+            'w-full appearance-none bg-white border border-[#ACACAC] rounded-[6px] pl-[17px] pr-10 h-[52px] text-sm outline-none transition-all',
             'disabled:cursor-not-allowed disabled:opacity-60',
-            'focus:ring-2 focus:ring-[#1877F2] focus:ring-offset-1',
+            'focus:ring-2 focus:ring-[#C55F61] focus:ring-offset-1',
             error
               ? 'ring-2 ring-red-100 focus:ring-red-200'
               : '',
-            isPlaceholderSelected ? 'text-[#808080]' : 'text-slate-800',
+            isPlaceholderSelected ? 'text-[#ACACAC]' : 'text-slate-800',
             className,
           )}
           aria-invalid={Boolean(error)}
@@ -69,7 +69,7 @@ export default function FormSelect({
         </select>
 
         <div
-          className={`pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#808080] ${
+          className={`pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#606060] ${
             isDisabled ? 'opacity-60' : 'opacity-100'
           }`}
         >
