@@ -1,10 +1,12 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { z } from 'zod';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { usePhilippineAddress } from '../hooks/usePhilippineAddress';
 import { registerEvent } from '../api/registration';
+
+import { initialForm, registrationSchema } from './EventFormPage.schema';
+import { stepTransition, buildPayload } from './EventFormPage.utils';
 
 import RegistrationHero from './sections/RegistrationHero';
 import RegistrationSidebar from './sections/RegistrationSidebar';
@@ -12,116 +14,6 @@ import TrustFooterStrip from './sections/TrustFooterStrip';
 import RegistrationStep1 from './sections/RegistrationStep1';
 import RegistrationStep2 from './sections/RegistrationStep2';
 import RegistrationSuccess from './sections/RegistrationSuccess';
-
-const initialForm = {
-  // Basic Information
-  firstName: '',
-  lastName: '',
-  age: '',
-  gender: 'Male',
-
-  // Contact Information
-  email: '',
-  phone: '',
-
-  // Organization/Company
-  company: '',
-  position: '',
-
-  // Purpose of Visit
-  role: '',
-  eventDate: '',
-  occasion: '',
-  guests: '',
-  budget: '',
-  suppliers: [],
-  occasionOther: '',
-  suppliersOther: '',
-  specificSuppliers: '',
-  lumiPromos: '',
-  discoveryChannel: '',
-  discoveryOther: '',
-  province: '',
-  city: '',
-  barangay: '',
-  consent: false,
-
-  // Legacy fields (retained for backward compatibility)
-  fullName: '',
-  address: '',
-  region: '',
-  contactNumber: '',
-  purpose: 'General Shopper',
-  source: 'DTI Social Media',
-  visitorFrequency: 'First-time Visitor',
-  agreed: false,
-};
-
-// Merged validation schema for all 24 Step 1 fields
-const registrationSchema = z.object({
-  // Basic Information
-  firstName: z.string().trim().min(1, 'First name is required.'),
-  lastName: z.string().trim().min(1, 'Last name is required.'),
-  age: z.string().min(1, 'Please select your age.'),
-  gender: z.enum(['Male', 'Female']),
-  email: z
-    .string()
-    .trim()
-    .min(1, 'Email is required.')
-    .email('Please enter a valid email address.'),
-  phone: z
-    .string()
-    .min(1, 'Phone number is required.')
-    .regex(
-      /^9\d{9}$/,
-      'Please enter a valid 10-digit number starting with 9 (e.g., 9123456789).',
-    ),
-  province: z.string().min(1, 'Please select your region.'),
-  city: z.string().min(1, 'Please select your city.'),
-  barangay: z.string().min(1, 'Please select your barangay.'),
-
-  // Organization/Company
-  company: z.string().optional(),
-  position: z.string().optional(),
-
-  // Purpose of Visit
-  role: z.string().min(1, 'Please select your role.'),
-  eventDate: z.string().min(1, 'Please select your event date.'),
-  occasion: z.string().min(1, 'Please select the occasion.'),
-  guests: z.string().min(1, 'Please select expected guests.'),
-  budget: z.string().min(1, 'Please select your budget range.'),
-  suppliers: z.array(z.string()).min(1, 'Please select at least one supplier.'),
-  occasionOther: z.string().optional(),
-  suppliersOther: z.string().optional(),
-  specificSuppliers: z.string().optional(),
-  lumiPromos: z.string().min(1, 'Please select your Lumi Candles preference.'),
-  discoveryChannel: z
-    .string()
-    .min(1, 'Please select how you heard about the event.'),
-  discoveryOther: z.string().optional(),
-}).superRefine((data, ctx) => {
-  if (data.occasion === 'Other' && !data.occasionOther?.trim()) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['occasionOther'],
-      message: 'Please specify your occasion.',
-    });
-  }
-  if (data.suppliers.includes('Other') && !data.suppliersOther?.trim()) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['suppliersOther'],
-      message: 'Please specify other suppliers.',
-    });
-  }
-});
-
-const stepTransition = {
-  initial: { opacity: 0, x: 40 },
-  animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -40 },
-  transition: { duration: 0.3, ease: 'easeOut' },
-};
 
 export default function EventFormPage() {
   const [form, setForm] = useState(initialForm);
@@ -325,58 +217,12 @@ export default function EventFormPage() {
     submitRegistration();
   }
 
-  // Payload builder — isolates API shape from UI state
-  function buildPayload() {
-    const fullName = `${form.firstName} ${form.lastName}`.trim();
-
-    return {
-      eventGuid: eventGuId,
-      // Step 1 fields
-      fullName,
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      age: form.age,
-      gender: form.gender,
-      email: form.email.trim(),
-      mobileNumber: form.phone,
-      company: form.company.trim() || null,
-      position: form.position.trim() || null,
-      // Purpose fields
-      myRoleInOccasion: form.role,
-      eventDate: form.eventDate,
-      occasionPlanningFor: form.occasion,
-      occasionOther: form.occasionOther?.trim() || null,
-      numberOfGuests: form.guests,
-      budget: form.budget,
-      suppliersLookingFor: (form.suppliers || []).join(', '),
-      suppliersOther: form.suppliersOther?.trim() || null,
-      specificSuppliers: form.specificSuppliers?.trim() || null,
-      promoPreference: form.lumiPromos || null,
-      discoveryOther: form.discoveryOther.trim() || null,
-      province: form.province,
-      city: form.city,
-      locationOther: '', // Hardcoded empty string — field removed per Figma
-      consent: form.consent,
-      // Legacy fields (for backward compatibility)
-      address: form.address || fullName,
-      region: form.region || form.province,
-      barangay: form.barangay || '',
-      contactNumber: form.phone,
-      purpose: form.purpose,
-      source: form.source,
-      visitorFrequency: form.visitorFrequency,
-      agreedToTerms: 'Yes, I agree.',
-      howHeardAboutEvent: form.discoveryChannel,
-      firstTimeToJoin: 'Yes',
-    };
-  }
-
   async function submitRegistration() {
     setIsSubmitting(true);
     setSubmitError(null);
 
     try {
-      const payload = buildPayload();
+      const payload = buildPayload(form, eventGuId);
       const data = await registerEvent(payload);
       console.log('Registration response:', data);
       setStep(3);
