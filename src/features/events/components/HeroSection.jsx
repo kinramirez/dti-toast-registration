@@ -33,8 +33,7 @@ const HeroSection = () => {
               for your forever
             </span>
             <p className="text-base text-[#434343] font-satoshi mt-4 max-w-lg leading-relaxed">
-              Toast Wedding Fair brings together top wedding suppliers, exclusive
-              deals, and endless inspiration to make your dream wedding a reality.
+              Register today to secure your spot and stay updated with everything you need for an exceptional event experience.
             </p>
             <button
               onClick={scrollToUpcoming}
