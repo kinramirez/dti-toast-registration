@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
+const FALLBACK_IMAGE = '/dtilogo.png';
+
 const ImageModal = ({ src, alt, onClose }) => {
+  const [imgSrc, setImgSrc] = useState(src);
+
   if (!src) return null;
 
   return (
@@ -19,8 +23,9 @@ const ImageModal = ({ src, alt, onClose }) => {
 
       <div className='relative max-w-5xl max-h-full flex items-center justify-center'>
         <img
-          src={src}
+          src={imgSrc}
           alt={alt}
+          onError={() => setImgSrc(FALLBACK_IMAGE)}
           className='max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300'
         />
       </div>
