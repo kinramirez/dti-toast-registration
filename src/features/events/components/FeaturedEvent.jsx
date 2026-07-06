@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Star, ArrowRight, MapPin, Clock, Calendar, SquareUser, UsersRound } from 'lucide-react';
-import ImageModal from '@/components/ui/ImageModal';
 import { useNavigate } from 'react-router-dom';
 import dtiLogo from '@/assets/dtilogo.png';
 import { formatDate, formatTime } from '@/lib/utils/eventUtils';
 
 const FeaturedEvent = ({ event }) => {
   const navigate = useNavigate();
-  const [isImageOpen, setIsImageOpen] = useState(false);
 
   if (!event) return null;
+
+  const handleViewDetails = () => {
+    navigate(`/event/${event.id}`, { state: { event } });
+  };
 
   const handleRegister = () => {
     navigate('/event/register', { state: { event } });
@@ -60,13 +62,13 @@ const FeaturedEvent = ({ event }) => {
   return (
     <div className="mb-[60px]">
       <div
-        className="flex flex-col lg:flex-row rounded-lg overflow-hidden border"
+        className="flex flex-col lg:flex-row rounded-lg overflow-hidden border cursor-pointer"
         style={{ borderColor: '#C55F61', borderWidth: '0.5px' }}
+        onClick={handleViewDetails}
       >
         {/* Left: Image with badge */}
         <div
-          className="relative w-full lg:w-[360px] min-h-[360px] lg:self-stretch shrink-0 bg-slate-100 cursor-pointer group overflow-hidden"
-          onClick={() => setIsImageOpen(true)}
+          className="relative w-full lg:w-[360px] min-h-[360px] lg:self-stretch shrink-0 bg-slate-100 overflow-hidden"
         >
           <img
             src={event.image || dtiLogo}
@@ -77,13 +79,8 @@ const FeaturedEvent = ({ event }) => {
               e.currentTarget.onerror = null;
               e.currentTarget.src = dtiLogo;
             }}
-            className="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-90"
+            className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-            <span className="text-white text-xs font-bold bg-black/50 px-3 py-1 rounded-full font-satoshi">
-              View Fullscreen
-            </span>
-          </div>
           {/* Featured badge */}
           <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-[#C55F61] text-white px-3 py-1.5 rounded text-xs font-bold font-satoshi">
             <Star className="w-3.5 h-3.5 fill-[#FFB24E] text-[#FFB24E]" />
@@ -200,7 +197,10 @@ const FeaturedEvent = ({ event }) => {
 
           {/* Register button */}
           <button
-            onClick={handleRegister}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRegister();
+            }}
             className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200 w-full focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61]"
             style={{
               background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
@@ -220,14 +220,6 @@ const FeaturedEvent = ({ event }) => {
           </button>
         </div>
       </div>
-
-      {isImageOpen && (
-        <ImageModal
-          src={event.image || dtiLogo}
-          alt={event?.title}
-          onClose={() => setIsImageOpen(false)}
-        />
-      )}
     </div>
   );
 };
