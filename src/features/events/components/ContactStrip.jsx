@@ -39,7 +39,7 @@ const ContactStrip = () => {
             </div>
             <div>
               <p className="font-satoshi font-bold text-sm leading-[19px] text-[#121212]">
-                (+63) 917 123 4567 | (+63) 2 8123 4567
+                277455415
               </p>
               <p className="font-satoshi font-medium text-xs leading-4 text-[#606060] mt-1">
                 Mon - Fri | 9:00 AM - 6:00 PM
@@ -57,7 +57,7 @@ const ContactStrip = () => {
             </div>
             <div>
               <p className="font-satoshi font-bold text-sm leading-[19px] text-[#121212]">
-                hello@toastweddingfair.ph | info@toastweddingfair.ph
+                toast@aftcorpph.com
               </p>
               <p className="font-satoshi font-medium text-xs leading-4 text-[#606060] mt-1">
                 We will reply as soon as possible
@@ -75,7 +75,7 @@ const ContactStrip = () => {
             </div>
             <div>
               <p className="font-satoshi font-bold text-sm leading-[19px] text-[#121212]">
-                Toast Wedding Fair
+                toastweddingfair
               </p>
               <Link
                 to="/contact"

@@ -25,12 +25,12 @@ const HeroSection = () => {
           {/* Left: Text content */}
           <div className="flex flex-col items-start max-w-[635px]">
             <h1 className="text-[64px] leading-[1.1] font-bold text-[#121212] font-cormorant max-sm:text-[40px]">
-              Find the best supplier
+              Welcome to Toast
             </h1>
             <span
               className="text-[96px] leading-[1] text-[#C55F61] font-corinthia -mt-2 max-sm:text-[56px]"
             >
-              for your forever
+              Join the Experience
             </span>
             <p className="text-base text-[#434343] font-satoshi mt-4 max-w-lg leading-relaxed">
               Register today to secure your spot and stay updated with everything you need for an exceptional event experience.

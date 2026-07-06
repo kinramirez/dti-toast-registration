@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import ImageModal from '@/components/ui/ImageModal';
 import maps_placeholder from '@/assets/maps-placeholder.png';
+import wtc_placeholder from '@/assets/wtc_placeholder.png';
 
 const GOOGLE_MAPS_URL =
   'https://www.google.com/maps/search/?api=1&query=World+Trade+Center+Metro+Manila+Gil+Puyat+Ave+Pasay+City';
@@ -10,7 +11,7 @@ const VenueSection = ({ event }) => {
   const [isPhotoOpen, setIsPhotoOpen] = useState(false);
 
   const venueName = event?.location || 'World Trade Center Metro Manila';
-  const venuePhoto = event?.image || maps-placeholder;
+  const venuePhoto = event?.image || wtc_placeholder;
 
   return (
     <section className="max-w-container mx-auto px-8 max-sm:px-6 py-8">
@@ -64,6 +65,10 @@ const VenueSection = ({ event }) => {
           <img
             src={venuePhoto}
             alt={`${venueName} venue`}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = wtc_placeholder;
+            }}
             className="w-full h-[250px] object-cover rounded-lg group-hover:scale-105 transition duration-500"
           />
         </div>

@@ -242,6 +242,10 @@ const EventDetailsPage = () => {
                 <img
                   src={event.image || dtiLogo}
                   alt={event.title}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = dtiLogo;
+                  }}
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                 />
                 {/* Blush gradient scrim on left edge of image for text legibility */}
