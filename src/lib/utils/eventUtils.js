@@ -163,3 +163,13 @@ export const normalizeEvent = (event) => {
     image: imageUrl,
   };
 };
+
+export const isEventUpcoming = (event) => {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0); // normalize to start of today
+  // Prefer endDate (multi-day events still ongoing), fall back to startDate
+  const eventDate = event.endDate
+    ? new Date(event.endDate)
+    : new Date(event.startDate);
+  return !isNaN(eventDate.getTime()) && eventDate >= now;
+};

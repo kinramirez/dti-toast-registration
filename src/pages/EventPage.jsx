@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getEvents } from '@/api/events';
-import { normalizeEvent } from '@/lib/utils/eventUtils';
+import { normalizeEvent, isEventUpcoming } from '@/lib/utils/eventUtils';
 import HeroSection from '@/features/events/components/HeroSection';
 import SearchBar from '@/features/events/components/SearchBar';
 import FeaturedEvent from '@/features/events/components/FeaturedEvent';
@@ -39,9 +39,11 @@ const Events = () => {
   }, [currentPage]);
 
   const featuredEvent =
-    events.find((e) => e.isFeatured) || events[0];
+    events.find((e) => e.isFeatured && isEventUpcoming(e)) ||
+    events.find(isEventUpcoming) ||
+    null;
   const upcomingEvents = events.filter(
-    (e) => e.id !== featuredEvent?.id,
+    (e) => e.id !== featuredEvent?.id && isEventUpcoming(e),
   );
 
   const isEmpty = !eventsLoading && !eventsError && upcomingEvents.length === 0;
