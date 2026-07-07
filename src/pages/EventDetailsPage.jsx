@@ -5,6 +5,7 @@ import { normalizeEvent } from '@/lib/utils/eventUtils';
 import { getEventById } from '@/api/events';
 import dtiLogo from '@/assets/dtilogo.png';
 import ImageModal from '@/components/ui/ImageModal';
+import Toast from '@/components/ui/Toast';
 import EventOverviewCard from '@/features/events/components/EventOverviewCard';
 import WhatToExpect from '@/features/events/components/WhatToExpect';
 import VenueSection from '@/features/events/components/VenueSection';
@@ -20,6 +21,8 @@ const EventDetailsPage = () => {
   const [fetchedEvent, setFetchedEvent] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   // Path A: event from navigation state (instant)
   const stateEvent = useMemo(() => {
@@ -63,6 +66,31 @@ const EventDetailsPage = () => {
   const handleRegister = () => {
     if (event) {
       navigate('/event/register', { state: { event } });
+    }
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: event?.title || 'Toast Wedding Fair',
+      text: event?.description || 'Check out this wedding fair!',
+      url: window.location.href,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        // User cancelled or share failed — silently ignore
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        setToastMessage('Link copied to clipboard!');
+        setToastVisible(true);
+      } catch {
+        setToastMessage('Failed to copy link');
+        setToastVisible(true);
+      }
     }
   };
 
@@ -161,11 +189,39 @@ const EventDetailsPage = () => {
         }}
       >
         <div className="max-w-container mx-auto px-8 max-sm:px-6">
+          {/* Breadcrumb — above image on mobile */}
+          <div className="lg:hidden pt-4">
+            <Link
+              to="/"
+              className="inline-flex items-center text-[#737373] hover:text-[#C55F61] transition-colors font-satoshi font-bold text-base leading-[22px]"
+            >
+              ‹ Event Details
+            </Link>
+          </div>
+
           <div className="grid lg:grid-cols-[1fr_864px] items-center min-h-[500px] lg:min-h-[600px]">
+            {/* MOBILE-ONLY Hero Image (above text) */}
+            <div className="block lg:hidden w-full">
+              <div
+                onClick={() => setIsImageOpen(true)}
+                className="relative w-full h-[250px] sm:h-[350px] cursor-pointer overflow-hidden"
+              >
+                <img
+                  src={event.image || dtiLogo}
+                  alt={event.title}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = dtiLogo;
+                  }}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+
             {/* LEFT — Text Column */}
-            <div className="py-8 lg:py-16 space-y-4 lg:space-y-6">
-              {/* Breadcrumb */}
-              <div>
+            <div className="relative z-20 py-8 lg:py-16 space-y-4 lg:space-y-6">
+              {/* Breadcrumb (desktop only — mobile breadcrumb is above the image) */}
+              <div className="hidden lg:block">
                 <Link
                   to="/"
                   className="inline-flex items-center text-[#737373] hover:text-[#C55F61] transition-colors font-satoshi font-bold text-base leading-[22px]"
@@ -175,28 +231,30 @@ const EventDetailsPage = () => {
               </div>
 
               {/* Featured Badge */}
-              <div
-                className="inline-flex items-center gap-1.5 bg-[#C55F61] text-white px-3 py-1.5 rounded text-xs font-bold font-satoshi"
-                style={{
-                  boxShadow: '0px 4px 4px rgba(197, 95, 97, 0.15)',
-                }}
-              >
-                <Star className="w-3.5 h-3.5 fill-[#FFB24E] text-[#FFB24E]" />
-                FEATURED EVENT
-              </div>
+              {event.isFeatured && (
+                <div
+                  className="inline-flex items-center gap-1.5 bg-[#C55F61] text-white px-3 py-1.5 rounded text-xs font-bold font-satoshi"
+                  style={{
+                    boxShadow: '0px 4px 4px rgba(197, 95, 97, 0.15)',
+                  }}
+                >
+                  <Star className="w-3.5 h-3.5 fill-[#FFB24E] text-[#FFB24E]" />
+                  FEATURED EVENT
+                </div>
+              )}
 
               {/* Title */}
-              <h1 className="font-cormorant font-bold text-[48px] sm:text-[56px] lg:text-[64px] leading-[1.2] lg:leading-[78px] text-[#121212]">
+              <h1 className="font-cormorant font-bold text-[32px] sm:text-[40px] lg:text-[64px] leading-[1.2] lg:leading-[78px] text-[#121212]">
                 {event.title}
               </h1>
 
               {/* Script Tagline */}
-              <p className="font-corinthia text-[64px] sm:text-[80px] lg:text-[96px] leading-[1.2] lg:leading-[115px] text-[#C55F61]">
+              <p className="hidden md:block font-corinthia text-[64px] sm:text-[80px] lg:text-[96px] leading-[1.2] lg:leading-[115px] text-[#C55F61]">
                 Your forever begins here
               </p>
 
               {/* Description */}
-              <p className="font-satoshi font-medium text-base leading-[22px] text-[#606060] max-w-[635px]">
+              <p className="hidden md:block font-satoshi font-medium text-base leading-[22px] text-[#606060] max-w-[635px]">
                 {event.description ||
                   'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.'}
               </p>
@@ -225,16 +283,19 @@ const EventDetailsPage = () => {
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
-                {/* Share Event — placeholder no-op */}
-                <button className="inline-flex items-center gap-2 text-[#C55F61] font-satoshi font-bold text-base leading-[22px] hover:opacity-80 transition-opacity">
+                {/* Share Event */}
+                <button
+                  onClick={handleShare}
+                  className="inline-flex items-center gap-2 text-[#C55F61] font-satoshi font-bold text-base leading-[22px] hover:opacity-80 transition-opacity"
+                >
                   <Share2 className="w-4 h-4" />
                   Share Event
                 </button>
               </div>
             </div>
 
-            {/* RIGHT — Hero Image (full bleed to right edge) */}
-            <div className="relative lg:absolute lg:right-0 lg:top-0 lg:h-full">
+            {/* RIGHT — Hero Image (full bleed to right edge, desktop only) */}
+            <div className="hidden lg:block relative lg:absolute lg:right-0 lg:top-0 lg:h-full">
               <div
                 onClick={() => setIsImageOpen(true)}
                 className="relative w-full lg:w-[864px] h-[300px] sm:h-[400px] lg:h-full cursor-pointer group overflow-hidden"
@@ -299,6 +360,13 @@ const EventDetailsPage = () => {
           onClose={() => setIsImageOpen(false)}
         />
       )}
+
+      {/* Toast notification for share fallback */}
+      <Toast
+        message={toastMessage}
+        visible={toastVisible}
+        onClose={() => setToastVisible(false)}
+      />
     </div>
   );
 };
