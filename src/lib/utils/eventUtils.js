@@ -153,7 +153,7 @@ export const normalizeEvent = (event) => {
 
   return {
     ...event,
-    id: event.id ?? event.guid,
+    id: event.guid ?? event.id,
     startDate: String(event.startDate ?? ''),
     region: normalizeRegion(event.region),
     displayDate: formatDisplayDate(event.startDate, event.endDate),
