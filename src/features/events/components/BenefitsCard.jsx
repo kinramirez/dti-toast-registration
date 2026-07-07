@@ -27,16 +27,16 @@ const benefitItems = [
 const BenefitsCard = () => {
   return (
     <div
-      className="bg-white/70 backdrop-blur-sm rounded-2xl p-8"
+      className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 md:p-8"
       style={{
         boxShadow: '0px 6px 4px rgba(18, 18, 18, 0.15)',
       }}
     >
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3 md:gap-6">
         {benefitItems.map((item) => (
-          <div key={item.label} className="flex flex-row items-center gap-3">
+          <div key={item.label} className="flex flex-row items-center gap-2 md:gap-3">
             <item.icon
-              className="w-14 h-14 text-[#AF5456] shrink-0 mt-0.5 border rounded-full p-2"
+              className="w-10 h-10 md:w-14 md:h-14 text-[#AF5456] shrink-0 mt-0.5 border rounded-full p-1.5 md:p-2"
               aria-hidden="true"
               strokeWidth={1}
             />

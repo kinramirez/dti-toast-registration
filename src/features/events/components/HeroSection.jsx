@@ -10,8 +10,8 @@ const HeroSection = () => {
 
   return (
     <section
-      className="relative w-full overflow-hidden"
-      style={{ height: '631px', background: 'linear-gradient(180deg, #FFF6F3 0%, rgba(255,246,243,0.6) 100%)' }}
+      className="relative w-full overflow-hidden min-h-[400px] md:min-h-[500px] lg:h-[631px]"
+      style={{ background: 'linear-gradient(180deg, #FFF6F3 0%, rgba(255,246,243,0.6) 100%)' }}
     >
       {/* Background image overlay */}
       <div
@@ -20,10 +20,10 @@ const HeroSection = () => {
         aria-hidden="true"
       />
 
-      <div className="relative mx-auto w-full max-w-container px-8 max-sm:px-6 h-full flex items-center">
-        <div className="flex flex-col lg:flex-row items-center justify-between w-full gap-12">
+      <div className="relative mx-auto w-full max-w-container px-8 max-sm:px-6 h-full flex items-center py-8 md:py-0">
+        <div className="flex flex-col lg:flex-row items-center justify-between w-full gap-6 md:gap-12">
           {/* Left: Text content */}
-          <div className="flex flex-col items-start max-w-[635px]">
+          <div className="flex flex-col items-start max-md:items-center max-md:text-center max-w-[635px]">
             <h1 className="text-[64px] leading-[1.1] font-bold text-[#121212] font-cormorant max-sm:text-[40px]">
               Welcome to Toast
             </h1>
@@ -37,7 +37,7 @@ const HeroSection = () => {
             </p>
             <button
               onClick={scrollToUpcoming}
-              className="mt-8 inline-flex items-center gap-2 px-8 py-3 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61]"
+              className="mt-8 inline-flex items-center gap-2 px-8 py-3 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61] max-md:mx-auto"
               style={{
                 background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
                 textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',

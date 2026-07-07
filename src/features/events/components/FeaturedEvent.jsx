@@ -68,7 +68,7 @@ const FeaturedEvent = ({ event }) => {
       >
         {/* Left: Image with badge */}
         <div
-          className="relative w-full lg:w-[360px] min-h-[360px] lg:self-stretch shrink-0 bg-slate-100 overflow-hidden"
+          className="relative w-full lg:w-[360px] min-h-[200px] md:min-h-[360px] lg:self-stretch shrink-0 bg-slate-100 overflow-hidden"
         >
           <img
             src={event.image || dtiLogo}
@@ -89,11 +89,11 @@ const FeaturedEvent = ({ event }) => {
         </div>
 
         {/* Center: Content */}
-        <div className="flex-1 flex flex-col justify-center px-8 py-8 min-w-0">
+        <div className="flex-1 flex flex-col justify-center px-4 py-4 md:px-8 md:py-8 min-w-0">
           <span className="text-sm font-bold text-[#C55F61] font-satoshi uppercase tracking-wider mb-2">
             UP NEXT
           </span>
-          <h3 className="text-[32px] font-bold text-[#121212] font-cormorant leading-tight mb-3">
+          <h3 className="text-[24px] md:text-[32px] font-bold text-[#121212] font-cormorant leading-tight mb-3">
             {event.title}
           </h3>
           <p className="text-sm text-[#737373] font-satoshi leading-relaxed mb-6 line-clamp-3">
@@ -149,10 +149,34 @@ const FeaturedEvent = ({ event }) => {
               </div>
             </div>
           </div>
+
+          {/* Mobile Register button (duplicated from right column) */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRegister();
+            }}
+            className="md:hidden mt-6 inline-flex items-center justify-center gap-2 px-8 py-3 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200 w-full focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61]"
+            style={{
+              background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
+              textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.9';
+              e.currentTarget.style.boxShadow = '0px 4px 12px rgba(197, 95, 97, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            Register Now
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Right: Stat pills + CTA */}
-        <div className="flex flex-col items-center justify-center gap-6 px-8 py-8 lg:border-l border-[#E8E8E8] shrink-0">
+        <div className="hidden md:flex flex-col items-center justify-center gap-6 px-4 py-4 md:px-8 md:py-8 lg:border-l border-[#E8E8E8] shrink-0">
           {/* Stat pills — matching BenefitsCard layout */}
           <div className="flex flex-col gap-2 w-full">
             {/* Exhibitors */}

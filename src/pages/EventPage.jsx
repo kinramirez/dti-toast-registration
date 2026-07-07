@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getEvents } from '@/api/events';
 import { normalizeEvent, isEventUpcoming } from '@/lib/utils/eventUtils';
 import HeroSection from '@/features/events/components/HeroSection';
@@ -8,45 +8,85 @@ import EventCard from '@/features/events/components/EventCard';
 import EventPagination from '@/features/events/components/EventPagination';
 import NewsletterBand from '@/features/events/components/NewsletterBand';
 
+const GRID_PAGE_SIZE = 8;
+
 const Events = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [events, setEvents] = useState([]);
-  const [totalPages, setTotalPages] = useState(1);
+  const [allEvents, setAllEvents] = useState([]); // raw normalized events from API
   const [eventsLoading, setEventsLoading] = useState(true);
   const [eventsError, setEventsError] = useState(null);
 
+  // Mobile "Load More" state
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileVisibleCount, setMobileVisibleCount] = useState(GRID_PAGE_SIZE);
+
+  // Detect mobile via matchMedia
   useEffect(() => {
-    async function loadEvents() {
+    const mql = window.matchMedia('(max-width: 767px)');
+    const handler = (e) => setIsMobile(e.matches);
+    setIsMobile(mql.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
+  // Fetch all events once, then paginate client-side
+  useEffect(() => {
+    let cancelled = false;
+    async function loadAllEvents() {
       setEventsLoading(true);
       setEventsError(null);
       try {
-        const data = await getEvents({
-          page: currentPage,
-          limit: 8,
-        });
-        setEvents(data.events.map(normalizeEvent));
-        setTotalPages(data.totalPages);
-        setCurrentPage(data.currentPage);
+        const data = await getEvents({ limit: 100 });
+        if (!cancelled) {
+          setAllEvents(data.events.map(normalizeEvent));
+        }
       } catch (error) {
-        console.error('Failed to load events:', error);
-        setEventsError('Unable to load events. Please try again later.');
+        if (!cancelled) {
+          console.error('Failed to load events:', error);
+          setEventsError('Unable to load events. Please try again later.');
+        }
       } finally {
-        setEventsLoading(false);
+        if (!cancelled) setEventsLoading(false);
       }
     }
 
-    loadEvents();
-  }, [currentPage]);
+    loadAllEvents();
+    return () => { cancelled = true; };
+  }, []);
 
-  const featuredEvent =
-    events.find((e) => e.isFeatured && isEventUpcoming(e)) ||
-    events.find(isEventUpcoming) ||
-    null;
-  const upcomingEvents = events.filter(
-    (e) => e.id !== featuredEvent?.id && isEventUpcoming(e),
-  );
+  // Filter to upcoming events only, then derive featured + grid
+  const { featuredEvent, gridEvents, totalPages } = useMemo(() => {
+    const upcoming = allEvents.filter(isEventUpcoming);
 
-  const isEmpty = !eventsLoading && !eventsError && upcomingEvents.length === 0;
+    const featured =
+      upcoming.find((e) => e.isFeatured) ||
+      upcoming[0] ||
+      null;
+
+    const grid = upcoming.filter((e) => e.id !== featured?.id);
+
+    return {
+      featuredEvent: featured,
+      gridEvents: grid,
+      totalPages: Math.max(1, Math.ceil(grid.length / GRID_PAGE_SIZE)),
+    };
+  }, [allEvents]);
+
+  // Slice grid for current page
+  const currentPageGrid = useMemo(() => {
+    if (isMobile) {
+      return gridEvents.slice(0, mobileVisibleCount);
+    }
+    const start = (currentPage - 1) * GRID_PAGE_SIZE;
+    return gridEvents.slice(start, start + GRID_PAGE_SIZE);
+  }, [gridEvents, currentPage, isMobile, mobileVisibleCount]);
+
+  const handleLoadMore = () => {
+    setMobileVisibleCount((prev) => prev + GRID_PAGE_SIZE);
+  };
+
+  const isEmpty = !eventsLoading && !eventsError && gridEvents.length === 0;
+  const hasMoreMobile = isMobile && mobileVisibleCount < gridEvents.length;
 
   return (
     <div className="bg-white min-h-screen animate-page-in">
@@ -57,7 +97,7 @@ const Events = () => {
       <SearchBar />
 
       {/* Main content area */}
-      <div className="max-w-container mx-auto px-8 max-sm:px-6 py-[60px]">
+      <div className="max-w-container mx-auto px-4 md:px-8 max-sm:px-6 py-[60px]">
         {eventsLoading ? (
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <div className="w-8 h-8 rounded-full border-4 border-[rgba(197,95,97,0.2)] border-t-[#C55F61] animate-spin mb-4" />
@@ -84,8 +124,8 @@ const Events = () => {
           </div>
         ) : (
           <>
-            {/* Featured Event — only on page 1, always shown if exists */}
-            {currentPage === 1 && featuredEvent && (
+            {/* Featured Event — always shown if exists */}
+            {featuredEvent && (
               <FeaturedEvent event={featuredEvent} />
             )}
 
@@ -98,7 +138,7 @@ const Events = () => {
                 UPCOMING WEDDING FAIRS
               </h2>
 
-              {isEmpty ? (
+              {isEmpty && currentPage === 1 ? (
                 <div className="flex flex-col items-center justify-center py-24 text-center">
                   <h3 className="text-2xl font-bold text-[#5D5D5D] mb-3 font-satoshi">
                     No Events Available at This Time
@@ -110,9 +150,9 @@ const Events = () => {
               ) : (
                 <>
                   <div
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-[10px] gap-y-[34px]"
+                    className="grid grid-cols-2 lg:grid-cols-4 gap-x-[16px] md:gap-x-[10px] gap-y-[34px]"
                   >
-                    {upcomingEvents.map((event, index) => (
+                    {currentPageGrid.map((event, index) => (
                       <EventCard
                         key={event.id}
                         event={event}
@@ -122,12 +162,39 @@ const Events = () => {
                     ))}
                   </div>
 
-                  {/* Pagination */}
-                  <EventPagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                  />
+                  {/* Pagination (desktop) or Load More (mobile) */}
+                  {isMobile ? (
+                    hasMoreMobile && (
+                      <div className="flex justify-center mt-8">
+                        <button
+                          onClick={handleLoadMore}
+                          className="inline-flex items-center gap-2 px-8 py-3 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61]"
+                          style={{
+                            background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
+                            textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.opacity = '0.9';
+                            e.currentTarget.style.boxShadow = '0px 4px 12px rgba(197, 95, 97, 0.3)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.opacity = '1';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
+                        >
+                          Load More
+                        </button>
+                      </div>
+                    )
+                  ) : (
+                    totalPages > 1 && (
+                      <EventPagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                      />
+                    )
+                  )}
                 </>
               )}
             </div>
