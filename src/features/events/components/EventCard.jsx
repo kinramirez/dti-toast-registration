@@ -14,11 +14,21 @@ const EventCard = ({ event, className = '', style }) => {
     navigate(`/event/${event.id}`, { state: { event } });
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleViewDetails();
+    }
+  };
+
   return (
     <div
       className={`flex flex-col rounded-lg overflow-hidden bg-white transition-shadow duration-300 hover:shadow-[0_8px_30px_rgba(197,95,97,0.15)] cursor-pointer ${className}`}
       style={style}
+      role="button"
+      tabIndex={0}
       onClick={handleViewDetails}
+      onKeyDown={handleKeyDown}
     >
       {/* Image container with city badge and featured badge */}
       <div className="relative w-full h-56 overflow-hidden bg-slate-100 shrink-0">
