@@ -7,8 +7,8 @@ import { formatDate } from '@/lib/utils/eventUtils';
 const EventCard = ({ event, className = '', style }) => {
   const navigate = useNavigate();
 
-  // Static placeholder city badge (resolved item 25)
-  const cityBadge = 'MANILA';
+  // Derive city badge from event.rawRegion (preserved original value from API)
+  const cityBadge = event.rawRegion || event.region || 'MANILA';
 
   const handleViewDetails = () => {
     navigate(`/event/${event.id}`, { state: { event } });
@@ -23,7 +23,7 @@ const EventCard = ({ event, className = '', style }) => {
 
   return (
     <div
-      className={`flex flex-col rounded-lg overflow-hidden bg-white transition-shadow duration-300 hover:shadow-[0_8px_30px_rgba(197,95,97,0.15)] cursor-pointer ${className}`}
+      className={`flex flex-col rounded-2xl overflow-hidden bg-white border border-[#E8E8E8] transition-shadow duration-300 hover:shadow-[0_8px_30px_rgba(197,95,97,0.15)] cursor-pointer ${className}`}
       style={style}
       role="button"
       tabIndex={0}

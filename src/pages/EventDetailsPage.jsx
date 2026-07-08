@@ -276,12 +276,12 @@ const EventDetailsPage = () => {
               </h1>
 
               {/* Script Tagline */}
-              <p className="hidden md:block font-corinthia text-[64px] sm:text-[80px] lg:text-[96px] leading-[1.2] lg:leading-[115px] text-[#C55F61]">
+              <p className="font-corinthia text-[48px] sm:text-[64px] md:text-[80px] lg:text-[96px] leading-[1.2] lg:leading-[115px] text-[#C55F61]">
                 Your forever begins here
               </p>
 
               {/* Description */}
-              <p className="hidden md:block font-satoshi font-medium text-base leading-[22px] text-[#606060] max-w-[635px]">
+              <p className="font-satoshi font-medium text-sm md:text-base leading-[20px] md:leading-[22px] text-[#606060] max-w-[635px] line-clamp-2 md:line-clamp-none">
                 {event.description ||
                   'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.'}
               </p>
