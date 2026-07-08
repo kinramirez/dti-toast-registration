@@ -9,6 +9,8 @@ import ContactUs from './pages/ContactUs'
 import EventFormPage from './pages/EventFormPage'
 import EventPage from './pages/EventPage'
 import EventDetailsPage from './pages/EventDetailsPage'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsOfUse from './pages/TermsOfUse'
 
 function ScrollBehavior() {
   const { pathname, hash } = useLocation()
@@ -29,7 +31,7 @@ function ScrollBehavior() {
 
 function AppFrame() {
   const location = useLocation()
-  const isEventPage = location.pathname.startsWith('/event') || location.pathname === '/' || location.pathname === '/contact'
+  const isEventPage = location.pathname.startsWith('/event') || location.pathname === '/' || location.pathname === '/contact' || location.pathname === '/privacy' || location.pathname === '/terms'
   const isEventRegisterPage = location.pathname === '/event/register'
   const isEventDetailsPage = /^\/event\/[^/]+$/.test(location.pathname) && !isEventRegisterPage
   const isContactPage = location.pathname === '/contact'
@@ -39,6 +41,8 @@ function AppFrame() {
     if (isEventRegisterPage) return null
     if (isEventDetailsPage) return null
     if (location.pathname === '/') return null
+    if (location.pathname === '/privacy') return 'Privacy Policy'
+    if (location.pathname === '/terms') return 'Terms of Use'
     if (isEventPage) return 'Events'
     return null
   }
@@ -61,6 +65,8 @@ function AppFrame() {
           <Route path="/event/register" element={<EventFormPage />} />
           <Route path="/event/:id" element={<EventDetailsPage />} />
           <Route path="/contact" element={<ContactUs />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfUse />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
