@@ -4,6 +4,28 @@ import { useNavigate } from 'react-router-dom';
 import dtiLogo from '@/assets/dtilogo.png';
 import { formatDate, formatTime } from '@/lib/utils/eventUtils';
 
+const RegisterButton = ({ className, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`inline-flex items-center justify-center gap-2 px-8 py-3 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200 w-full focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61] ${className}`}
+    style={{
+      background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
+      textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.opacity = '0.9';
+      e.currentTarget.style.boxShadow = '0px 4px 12px rgba(197, 95, 97, 0.3)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.opacity = '1';
+      e.currentTarget.style.boxShadow = 'none';
+    }}
+  >
+    Register Now
+    <ArrowRight className="w-4 h-4" />
+  </button>
+);
+
 const FeaturedEvent = ({ event }) => {
   const navigate = useNavigate();
 
@@ -150,29 +172,15 @@ const FeaturedEvent = ({ event }) => {
             </div>
           </div>
 
-          {/* Mobile Register button (duplicated from right column) */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleRegister();
-            }}
-            className="md:hidden mt-6 inline-flex items-center justify-center gap-2 px-8 py-3 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200 w-full focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61]"
-            style={{
-              background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
-              textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = '0.9';
-              e.currentTarget.style.boxShadow = '0px 4px 12px rgba(197, 95, 97, 0.3)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = '1';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          >
-            Register Now
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          {/* Mobile Register button */}
+          <div className="md:hidden mt-6">
+            <RegisterButton
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRegister();
+              }}
+            />
+          </div>
         </div>
 
         {/* Right: Stat pills + CTA */}
@@ -220,28 +228,12 @@ const FeaturedEvent = ({ event }) => {
           </div>
 
           {/* Register button */}
-          <button
+          <RegisterButton
             onClick={(e) => {
               e.stopPropagation();
               handleRegister();
             }}
-            className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200 w-full focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61]"
-            style={{
-              background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
-              textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = '0.9';
-              e.currentTarget.style.boxShadow = '0px 4px 12px rgba(197, 95, 97, 0.3)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = '1';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          >
-            Register Now
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          />
         </div>
       </div>
     </div>
