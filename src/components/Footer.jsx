@@ -43,13 +43,13 @@ export const Footer = () => {
               FOLLOW US
             </span>
             <div className="flex items-center gap-4" aria-label="Social links">
-              <a href="https://www.facebook.com/toastweddingfair" aria-label="Facebook" className="inline-flex items-center justify-center transition-opacity hover:opacity-80">
+              <a href="https://www.facebook.com/toastweddingfair" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="inline-flex items-center justify-center transition-opacity hover:opacity-80">
                 <FacebookIcon />
               </a>
-              <a href="https://www.instagram.com/toastweddingfair?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" aria-label="Instagram" className="inline-flex items-center justify-center transition-opacity hover:opacity-80">
+              <a href="https://www.instagram.com/toastweddingfair?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="inline-flex items-center justify-center transition-opacity hover:opacity-80">
                 <InstagramIcon />
               </a>
-              <a href="https://www.tiktok.com/@toastweddingfair" aria-label="TikTok" className="inline-flex items-center justify-center transition-opacity hover:opacity-80">
+              <a href="https://www.tiktok.com/@toastweddingfair" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="inline-flex items-center justify-center transition-opacity hover:opacity-80">
                 <TikTokIcon />
               </a>
             </div>

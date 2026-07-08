@@ -37,7 +37,7 @@ const SearchBar = () => {
   };
 
   return (
-    <div className="relative z-20 -mt-10">
+    <div className="relative z-20 -mt-6">
       <div className="max-w-container mx-auto px-8 max-sm:px-6">
         <div
           className="bg-white rounded-2xl p-2 flex flex-col lg:flex-row items-stretch gap-2"
