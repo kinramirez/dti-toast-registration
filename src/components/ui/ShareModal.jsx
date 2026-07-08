@@ -91,9 +91,8 @@ const SHARE_TARGETS = [
 export default function ShareModal({ isOpen, onClose, event, onToast }) {
   const [copied, setCopied] = useState(false);
   const overlayRef = useRef(null);
-  const closeRef = useRef(null);
+  const cardRef = useRef(null);
   const firstButtonRef = useRef(null);
-  const lastButtonRef = useRef(null);
 
   const url = typeof window !== 'undefined' ? window.location.href : '';
   const title = event?.title || 'Toast Wedding Fair';
@@ -115,6 +114,16 @@ export default function ShareModal({ isOpen, onClose, event, onToast }) {
     }
   }, [isOpen]);
 
+  // Helper: query all tabbable elements within the modal card
+  const getTabbableElements = useCallback(() => {
+    if (!cardRef.current) return [];
+    const selector =
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    return Array.from(cardRef.current.querySelectorAll(selector)).filter(
+      (el) => !el.closest('[aria-hidden="true"]') && el.offsetParent !== null,
+    );
+  }, []);
+
   // Escape key handler + focus trap
   const handleKeyDown = useCallback(
     (e) => {
@@ -126,13 +135,9 @@ export default function ShareModal({ isOpen, onClose, event, onToast }) {
         return;
       }
 
-      // Focus trap: Tab / Shift+Tab cycles between focusable elements
+      // Focus trap: Tab / Shift+Tab cycles between all tabbable elements
       if (e.key === 'Tab') {
-        const focusable = [
-          firstButtonRef.current,
-          lastButtonRef.current,
-          closeRef.current,
-        ].filter(Boolean);
+        const focusable = getTabbableElements();
 
         if (focusable.length < 2) return;
 
@@ -152,7 +157,7 @@ export default function ShareModal({ isOpen, onClose, event, onToast }) {
         }
       }
     },
-    [isOpen, onClose],
+    [isOpen, onClose, getTabbableElements],
   );
 
   useEffect(() => {
@@ -195,7 +200,7 @@ export default function ShareModal({ isOpen, onClose, event, onToast }) {
         window.open(
           target.getUrl(url, title),
           '_blank',
-          'width=600,height=400',
+          'width=600,height=400,noopener,noreferrer',
         );
         break;
       case 'mailto':
@@ -224,6 +229,7 @@ export default function ShareModal({ isOpen, onClose, event, onToast }) {
           aria-labelledby="share-modal-title"
         >
           <motion.div
+            ref={cardRef}
             className="relative w-[448px] max-w-[calc(100vw-32px)] bg-white rounded-2xl p-8 flex flex-col gap-6 shadow-[0px_2px_4px_rgba(20,20,20,0.15)]"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -232,7 +238,6 @@ export default function ShareModal({ isOpen, onClose, event, onToast }) {
           >
             {/* Close button */}
             <button
-              ref={closeRef}
               onClick={onClose}
               className="absolute top-4 right-4 text-[#737373] hover:text-[#121212] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C55F61] focus-visible:ring-offset-2 rounded"
               aria-label="Close share dialog"
@@ -253,12 +258,11 @@ export default function ShareModal({ isOpen, onClose, event, onToast }) {
               {SHARE_TARGETS.map((target, index) => {
                 const Icon = target.icon;
                 const isFirst = index === 0;
-                const isLast = index === SHARE_TARGETS.length - 1;
 
                 return (
                   <button
                     key={target.key}
-                    ref={isFirst ? firstButtonRef : isLast ? lastButtonRef : undefined}
+                    ref={isFirst ? firstButtonRef : undefined}
                     onClick={() => handleShareAction(target)}
                     className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-[#C55F61] text-[#C55F61] font-satoshi font-bold text-sm transition-all duration-200 hover:bg-[#C55F61] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C55F61] focus-visible:ring-offset-2"
                   >
