@@ -5,6 +5,7 @@ import { normalizeEvent } from '@/lib/utils/eventUtils';
 import { getEventById } from '@/api/events';
 import dtiLogo from '@/assets/dtilogo.png';
 import ImageModal from '@/components/ui/ImageModal';
+import ShareModal from '@/components/ui/ShareModal';
 import Toast from '@/components/ui/Toast';
 import EventOverviewCard from '@/features/events/components/EventOverviewCard';
 import WhatToExpect from '@/features/events/components/WhatToExpect';
@@ -18,6 +19,7 @@ const EventDetailsPage = () => {
   const { id } = useParams();
 
   const [isImageOpen, setIsImageOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const [fetchedEvent, setFetchedEvent] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
@@ -69,6 +71,11 @@ const EventDetailsPage = () => {
     }
   };
 
+  const handleToast = (message) => {
+    setToastMessage(message);
+    setToastVisible(true);
+  };
+
   const handleShare = async () => {
     const shareData = {
       title: event?.title || 'Toast Wedding Fair',
@@ -79,8 +86,20 @@ const EventDetailsPage = () => {
     if (navigator.share) {
       try {
         await navigator.share(shareData);
-      } catch {
-        // User cancelled or share failed — silently ignore
+      } catch (err) {
+        if (err?.name === 'AbortError') {
+          // User cancelled — silently ignore
+          return;
+        }
+        // NotAllowedError, DataError, or other — fall back to clipboard
+        try {
+          await navigator.clipboard.writeText(window.location.href);
+          setToastMessage('Link copied to clipboard!');
+          setToastVisible(true);
+        } catch {
+          setToastMessage('Failed to copy link');
+          setToastVisible(true);
+        }
       }
     } else {
       try {
@@ -199,11 +218,19 @@ const EventDetailsPage = () => {
             </Link>
           </div>
 
-          <div className="grid lg:grid-cols-[1fr_864px] items-center min-h-[500px] lg:min-h-[600px]">
+          <div className="grid lg:grid-cols-[1fr_minmax(0,864px)] items-center min-h-[500px] lg:min-h-[600px]">
             {/* MOBILE-ONLY Hero Image (above text) */}
             <div className="block lg:hidden w-full">
               <div
+                role="button"
+                tabIndex={0}
                 onClick={() => setIsImageOpen(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setIsImageOpen(true);
+                  }
+                }}
                 className="relative w-full h-[250px] sm:h-[350px] cursor-pointer overflow-hidden"
               >
                 <img
@@ -285,7 +312,7 @@ const EventDetailsPage = () => {
 
                 {/* Share Event */}
                 <button
-                  onClick={handleShare}
+                  onClick={() => setIsShareOpen(true)}
                   className="inline-flex items-center gap-2 text-[#C55F61] font-satoshi font-bold text-base leading-[22px] hover:opacity-80 transition-opacity"
                 >
                   <Share2 className="w-4 h-4" />
@@ -360,6 +387,14 @@ const EventDetailsPage = () => {
           onClose={() => setIsImageOpen(false)}
         />
       )}
+
+      {/* Share Modal (conditional) */}
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        event={event}
+        onToast={handleToast}
+      />
 
       {/* Toast notification for share fallback */}
       <Toast
