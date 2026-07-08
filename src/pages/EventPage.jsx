@@ -15,6 +15,7 @@ const Events = () => {
   const [allEvents, setAllEvents] = useState([]); // raw normalized events from API
   const [eventsLoading, setEventsLoading] = useState(true);
   const [eventsError, setEventsError] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Mobile "Load More" state
   const [isMobile, setIsMobile] = useState(false);
@@ -36,9 +37,26 @@ const Events = () => {
       setEventsLoading(true);
       setEventsError(null);
       try {
-        const data = await getEvents({ limit: 100 });
+        const SAFETY_CAP = 500;
+        const allFetched = [];
+        let page = 1;
+        let hasMore = true;
+
+        while (hasMore && allFetched.length < SAFETY_CAP) {
+          const data = await getEvents({ page, limit: 100 });
+          if (!data.events || data.events.length === 0) break;
+
+          allFetched.push(...data.events);
+
+          if (page >= (data.totalPages || 1)) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        }
+
         if (!cancelled) {
-          setAllEvents(data.events.map(normalizeEvent));
+          setAllEvents(allFetched.map(normalizeEvent));
         }
       } catch (error) {
         if (!cancelled) {
@@ -52,7 +70,7 @@ const Events = () => {
 
     loadAllEvents();
     return () => { cancelled = true; };
-  }, []);
+  }, [refreshTrigger]);
 
   // Filter to upcoming events only, then derive featured + grid
   const { featuredEvent, gridEvents, totalPages } = useMemo(() => {
@@ -97,7 +115,7 @@ const Events = () => {
       <SearchBar />
 
       {/* Main content area */}
-      <div className="max-w-container mx-auto px-4 md:px-8 max-sm:px-6 py-[60px]">
+      <div className="max-w-container mx-auto px-4 sm:px-6 md:px-8 py-[60px]">
         {eventsLoading ? (
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <div className="w-8 h-8 rounded-full border-4 border-[rgba(197,95,97,0.2)] border-t-[#C55F61] animate-spin mb-4" />
@@ -112,7 +130,7 @@ const Events = () => {
               {eventsError}
             </p>
             <button
-              onClick={() => setCurrentPage((p) => p)}
+              onClick={() => setRefreshTrigger((n) => n + 1)}
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61]"
               style={{
                 background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
