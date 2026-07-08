@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import dtiLogoWhite from '@/assets/toast_logo_white.png';
-import { Link } from 'react-router-dom';
+import LegalModal from '@/components/ui/LegalModal';
 
 const FacebookIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
@@ -23,6 +24,9 @@ const TikTokIcon = () => (
 );
 
 export const Footer = () => {
+  const [isLegalOpen, setIsLegalOpen] = useState(false);
+  const [legalType, setLegalType] = useState('privacy');
+
   return (
     <footer className="text-white" style={{ backgroundColor: '#C55F61' }} aria-label="Site footer">
       <div className="w-full max-w-container mx-auto px-8 max-sm:px-6 py-12">
@@ -62,16 +66,31 @@ export const Footer = () => {
             &copy; 2026 Toast Wedding Fair. All rights reserved
           </p>
           <div className="flex items-center gap-4">
-            <Link to="/privacy" className="text-xs text-[#FEB5B6] hover:text-white transition-colors font-satoshi">
+            <button
+              type="button"
+              onClick={() => { setLegalType('privacy'); setIsLegalOpen(true); }}
+              className="text-xs text-[#FEB5B6] hover:text-white transition-colors font-satoshi bg-transparent border-none cursor-pointer"
+            >
               Privacy Policy
-            </Link>
+            </button>
             <span className="text-[#FEB5B6] text-xs">&middot;</span>
-            <Link to="/terms" className="text-xs text-[#FEB5B6] hover:text-white transition-colors font-satoshi">
+            <button
+              type="button"
+              onClick={() => { setLegalType('terms'); setIsLegalOpen(true); }}
+              className="text-xs text-[#FEB5B6] hover:text-white transition-colors font-satoshi bg-transparent border-none cursor-pointer"
+            >
               Terms of Use
-            </Link>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Legal Modal */}
+      <LegalModal
+        isOpen={isLegalOpen}
+        onClose={() => setIsLegalOpen(false)}
+        type={legalType}
+      />
     </footer>
   );
 };
