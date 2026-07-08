@@ -2,24 +2,20 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Search, MapPin, Calendar, ChevronDown } from 'lucide-react';
 
 const locationOptions = ['All Locations', 'Manila', 'Cebu', 'Davao', 'Iloilo'];
-const dateOptions = ['All Dates', 'January 2026', 'February 2026', 'March 2026', 'April 2026', 'May 2026', 'June 2026', 'July 2026', 'August 2026', 'September 2026', 'October 2026', 'November 2026', 'December 2026'];
 
-const SearchBar = () => {
+const SearchBar = ({ onSearch }) => {
   const [keyword, setKeyword] = useState('');
   const [location, setLocation] = useState('All Locations');
-  const [date, setDate] = useState('All Dates');
-  const [openDropdown, setOpenDropdown] = useState(null); // 'location' | 'date' | null
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [openDropdown, setOpenDropdown] = useState(null); // 'location' | null
   const locationRef = useRef(null);
-  const dateRef = useRef(null);
 
-  // Close dropdowns on outside click
+  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (locationRef.current && !locationRef.current.contains(e.target)) {
         if (openDropdown === 'location') setOpenDropdown(null);
-      }
-      if (dateRef.current && !dateRef.current.contains(e.target)) {
-        if (openDropdown === 'date') setOpenDropdown(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -30,10 +26,26 @@ const SearchBar = () => {
     setOpenDropdown((prev) => (prev === name ? null : name));
   };
 
-  const selectOption = (type, value) => {
-    if (type === 'location') setLocation(value);
-    if (type === 'date') setDate(value);
+  const selectOption = (value) => {
+    setLocation(value);
     setOpenDropdown(null);
+  };
+
+  const handleSearch = () => {
+    if (onSearch) {
+      onSearch({
+        keyword,
+        region: location === 'All Locations' ? '' : location,
+        startDateFrom: startDate,
+        startDateTo: endDate,
+      });
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
   };
 
   return (
@@ -50,6 +62,7 @@ const SearchBar = () => {
               type="text"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder="Search Wedding Fair..."
               aria-label="Search Wedding Fair"
               className="w-full bg-transparent text-sm text-[#121212] placeholder-[#ACACAC] font-satoshi outline-none border-none focus:ring-0"
@@ -81,7 +94,7 @@ const SearchBar = () => {
                 {locationOptions.map((opt) => (
                   <button
                     key={opt}
-                    onClick={() => selectOption('location', opt)}
+                    onClick={() => selectOption(opt)}
                     className={`w-full text-left px-4 py-2 text-sm font-satoshi transition-colors hover:bg-[rgba(197,95,97,0.05)] ${
                       location === opt ? 'text-[#C55F61] font-medium' : 'text-[#121212]'
                     }`}
@@ -96,42 +109,38 @@ const SearchBar = () => {
           {/* Divider */}
           <div className="hidden lg:block w-px bg-[#E8E8E8] self-stretch my-2" />
 
-          {/* Date dropdown */}
-          <div className="relative flex-shrink-0" ref={dateRef}>
-            <button
-              onClick={() => toggleDropdown('date')}
-              className="flex items-center gap-3 px-4 py-[14px] text-sm text-[#121212] font-satoshi whitespace-nowrap w-full lg:w-auto focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61] rounded-lg"
-              aria-label="Select date"
-              aria-expanded={openDropdown === 'date'}
-            >
-              <Calendar className="w-5 h-5 text-[#ACACAC] shrink-0" aria-hidden="true" />
-              <span className={date === 'All Dates' ? 'text-[#ACACAC]' : 'text-[#121212]'}>
-                {date}
-              </span>
-              <ChevronDown className="w-4 h-4 text-[#ACACAC] shrink-0" />
-            </button>
-            {openDropdown === 'date' && (
-              <div
-                className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md py-1 z-30 max-h-60 overflow-y-auto"
-                style={{ boxShadow: '0px 6px 16px rgba(18, 18, 18, 0.15)' }}
-              >
-                {dateOptions.map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => selectOption('date', opt)}
-                    className={`w-full text-left px-4 py-2 text-sm font-satoshi transition-colors hover:bg-[rgba(197,95,97,0.05)] ${
-                      date === opt ? 'text-[#C55F61] font-medium' : 'text-[#121212]'
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            )}
+          {/* Start Date picker */}
+          <div className="flex-shrink-0 flex items-center gap-2 px-4 py-[14px]">
+            <Calendar className="w-5 h-5 text-[#ACACAC] shrink-0" aria-hidden="true" />
+            <span className="text-xs text-[#ACACAC] font-satoshi whitespace-nowrap">From</span>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              aria-label="Start date"
+              className="bg-transparent text-sm text-[#121212] font-satoshi outline-none border-none focus:ring-0 [color-scheme:light]"
+            />
+          </div>
+
+          {/* Divider */}
+          <div className="hidden lg:block w-px bg-[#E8E8E8] self-stretch my-2" />
+
+          {/* End Date picker */}
+          <div className="flex-shrink-0 flex items-center gap-2 px-4 py-[14px]">
+            <Calendar className="w-5 h-5 text-[#ACACAC] shrink-0" aria-hidden="true" />
+            <span className="text-xs text-[#ACACAC] font-satoshi whitespace-nowrap">To</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              aria-label="End date"
+              className="bg-transparent text-sm text-[#121212] font-satoshi outline-none border-none focus:ring-0 [color-scheme:light]"
+            />
           </div>
 
           {/* Search button */}
           <button
+            onClick={handleSearch}
             className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-8 py-[14px] rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61]"
             style={{
               background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
