@@ -57,18 +57,17 @@ export default function RegistrationSidebar({ showWhyRegister = true }) {
           Reminder
         </h3>
         <p className='text-[16px] text-brand-dark leading-relaxed mb-4'>
-          Free entrance for those who register now until February 25, 2026!
-          Submission of this form confirms that you agree to receive updates
-          about Toast Wedding Fair! If you receive the form auto reply, it means
-          we have received your form and you are guaranteed FREE ENTRY! Valid ID
-          should be presented on the day. Name should match valid ID.
+          Free Entrance for those who register now until July 29, 2026, 5PM.
+          Submission of this form confirms that you agree to receive updates 
+          about Toast Wedding Fair! If you receive the form auto reply, it means 
+          we have received your form and you are guaranteed
+          FREE ENTRY!
         </p>
         <p className='text-[16px] font-bold text-danger-red leading-relaxed'>
-          1 Registration = 1 Person = 1 Full Day Entry.
+          This pre-registration is valid per individual/guest only.
         </p>
         <p className='text-[16px] font-bold text-danger-red leading-relaxed'>
-          Only 1 full day entry is free so no need to register the same person
-          twice.
+          If you are registering as a couple, family, or group, each individual must register separately.
         </p>
       </div>
 

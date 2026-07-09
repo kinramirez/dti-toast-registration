@@ -76,7 +76,7 @@ export default function RegistrationStep1({
           className='text-[20px] font-bold font-satoshi'
           style={{ color: '#C55F61' }}
         >
-          March 7-8, 2026 - World Trade Center
+          August 8 - 9, 2026 - SMX Convention Center Manila
         </p>
       </div>
 
