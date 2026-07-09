@@ -8,6 +8,7 @@ const SearchBar = ({ onSearch }) => {
   const [location, setLocation] = useState('All Locations');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [dateRangeError, setDateRangeError] = useState('');
   const [openDropdown, setOpenDropdown] = useState(null); // 'location' | null
   const locationRef = useRef(null);
 
@@ -32,6 +33,11 @@ const SearchBar = ({ onSearch }) => {
   };
 
   const handleSearch = () => {
+    if (startDate && endDate && startDate > endDate) {
+      setDateRangeError('Start date must be before or equal to end date.');
+      return;
+    }
+    setDateRangeError('');
     if (onSearch) {
       onSearch({
         keyword,
@@ -116,7 +122,8 @@ const SearchBar = ({ onSearch }) => {
             <input
               type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) => { setStartDate(e.target.value); setDateRangeError(''); }}
+              max={endDate || undefined}
               aria-label="Start date"
               className="bg-transparent text-sm text-[#121212] font-satoshi outline-none border-none focus:ring-0 [color-scheme:light]"
             />
@@ -132,7 +139,8 @@ const SearchBar = ({ onSearch }) => {
             <input
               type="date"
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              onChange={(e) => { setEndDate(e.target.value); setDateRangeError(''); }}
+              min={startDate || undefined}
               aria-label="End date"
               className="bg-transparent text-sm text-[#121212] font-satoshi outline-none border-none focus:ring-0 [color-scheme:light]"
             />
@@ -159,6 +167,13 @@ const SearchBar = ({ onSearch }) => {
             <Search className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Date-range validation error — full-width below search bar */}
+        {dateRangeError && (
+          <p className="text-[#ED1C24] text-xs font-satoshi mt-2 text-center" role="alert">
+            {dateRangeError}
+          </p>
+        )}
       </div>
     </div>
   );
