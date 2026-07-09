@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    appType: 'spa',
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),

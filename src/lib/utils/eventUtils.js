@@ -156,6 +156,7 @@ export const normalizeEvent = (event) => {
     id: event.guid ?? event.id,
     startDate: String(event.startDate ?? ''),
     region: normalizeRegion(event.region),
+    rawRegion: event.region ?? '', // preserve original region value for city badge
     displayDate: formatDisplayDate(event.startDate, event.endDate),
     eventMonth: getEventMonthKey(event.startDate),
     description: event.description ?? '',

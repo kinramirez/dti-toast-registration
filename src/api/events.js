@@ -1,9 +1,9 @@
 import apiClient from './client.js';
 import { normalizeEvent } from '@/lib/utils/eventUtils';
 
-export async function getEvents({ page = 1, limit = 10, month, year } = {}) {
+export async function getEvents({ page = 1, limit = 10, month, year, region, startDateFrom, startDateTo, isFeatured } = {}) {
   const response = await apiClient.get('/event-registrations/events', {
-    params: { page, limit, month, year },
+    params: { page, limit, month, year, region, startDateFrom, startDateTo, isFeatured },
   });
   const raw = response.data;
   console.log('[getEvents] raw response:', raw);
