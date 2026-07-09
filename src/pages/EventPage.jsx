@@ -36,10 +36,14 @@ const Events = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [mobilePage, setMobilePage] = useState(1);
 
-  // Detect mobile via matchMedia
+  // Detect mobile via matchMedia — also reset pagination on breakpoint change
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 767px)');
-    const handler = (e) => setIsMobile(e.matches);
+    const handler = (e) => {
+      setIsMobile(e.matches);
+      setCurrentPage(1);
+      setMobilePage(1);
+    };
     setIsMobile(mql.matches);
     mql.addEventListener('change', handler);
     return () => mql.removeEventListener('change', handler);
@@ -152,7 +156,7 @@ const Events = () => {
   };
 
   // Check if any search filter is active
-  const hasActiveFilters = searchFilters.region || searchFilters.startDateFrom || searchFilters.startDateTo;
+  const hasActiveFilters = searchFilters.region || searchFilters.startDateFrom || searchFilters.startDateTo || searchFilters.keyword;
 
   // Grid events: filter out featured from current page events
   // Skip dedup when filters are active — the featured event was fetched without filters
@@ -162,7 +166,19 @@ const Events = () => {
     return events.filter((e) => e.id !== featuredEvent.id);
   }, [events, featuredEvent, hasActiveFilters]);
 
-  const isEmpty = !eventsLoading && !eventsError && gridEvents.length === 0 && currentPage === 1 && mobilePage === 1;
+  // Client-side keyword filter over grid events
+  const keywordFilteredEvents = useMemo(() => {
+    if (!searchFilters.keyword) return gridEvents;
+    const kw = searchFilters.keyword.toLowerCase();
+    return gridEvents.filter(
+      (e) =>
+        e.title?.toLowerCase().includes(kw) ||
+        e.description?.toLowerCase().includes(kw) ||
+        e.location?.toLowerCase().includes(kw),
+    );
+  }, [gridEvents, searchFilters.keyword]);
+
+  const isEmpty = !eventsLoading && !eventsError && keywordFilteredEvents.length === 0 && currentPage === 1 && mobilePage === 1;
   const hasMoreMobile = isMobile && mobilePage < apiTotalPages;
 
 
@@ -205,13 +221,32 @@ const Events = () => {
             {/* Featured Event — with fallback when no featured event exists
                 or when the featured event doesn't match the active date filter */}
             {(() => {
-              // Determine if featured event should be shown
-              const showFeatured =
-                featuredEvent &&
-                !featuredLoading &&
-                (!hasActiveFilters ||
-                  !searchFilters.startDateFrom ||
-                  new Date(featuredEvent.startDate) >= new Date(searchFilters.startDateFrom));
+              // Determine if featured event should be shown — validate against ALL active filters
+              const showFeatured = (() => {
+                if (!featuredEvent || featuredLoading) return false;
+                if (!hasActiveFilters) return true;
+
+                // Check startDateFrom: featured startDate must be >= filter startDateFrom
+                if (searchFilters.startDateFrom) {
+                  if (new Date(featuredEvent.startDate) < new Date(searchFilters.startDateFrom)) return false;
+                }
+                // Check startDateTo: featured startDate must be <= filter startDateTo
+                if (searchFilters.startDateTo) {
+                  if (new Date(featuredEvent.startDate) > new Date(searchFilters.startDateTo)) return false;
+                }
+                // Check region: case-insensitive substring match on rawRegion
+                if (searchFilters.region) {
+                  const featRegion = (featuredEvent.rawRegion || '').toLowerCase();
+                  const filterRegion = searchFilters.region.toLowerCase();
+                  if (!featRegion.includes(filterRegion)) return false;
+                }
+                // Check keyword: case-insensitive match on title
+                if (searchFilters.keyword) {
+                  const kw = searchFilters.keyword.toLowerCase();
+                  if (!(featuredEvent.title || '').toLowerCase().includes(kw)) return false;
+                }
+                return true;
+              })();
 
               if (showFeatured) {
                 return <FeaturedEvent event={featuredEvent} />;
@@ -258,7 +293,7 @@ const Events = () => {
                   <div
                     className="grid grid-cols-2 lg:grid-cols-4 gap-x-[16px] md:gap-x-[10px] gap-y-[34px]"
                   >
-                    {gridEvents.map((event, index) => (
+                    {keywordFilteredEvents.map((event, index) => (
                       <EventCard
                         key={event.id}
                         event={event}
