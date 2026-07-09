@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Star, ArrowRight, Share2 } from 'lucide-react';
+import { Star, ArrowRight, Share2, ChevronDown, ChevronUp } from 'lucide-react';
 import { normalizeEvent } from '@/lib/utils/eventUtils';
 import { getEventById } from '@/api/events';
 import dtiLogo from '@/assets/dtilogo.png';
@@ -20,11 +20,13 @@ const EventDetailsPage = () => {
 
   const [isImageOpen, setIsImageOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
   const [fetchedEvent, setFetchedEvent] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const shareButtonRef = useRef(null);
 
   // Path A: event from navigation state (instant)
   const stateEvent = useMemo(() => {
@@ -276,15 +278,35 @@ const EventDetailsPage = () => {
               </h1>
 
               {/* Script Tagline */}
-              <p className="hidden md:block font-corinthia text-[64px] sm:text-[80px] lg:text-[96px] leading-[1.2] lg:leading-[115px] text-[#C55F61]">
+              <p className="font-corinthia text-[48px] sm:text-[64px] md:text-[80px] lg:text-[96px] leading-[1.2] lg:leading-[115px] text-[#C55F61]">
                 Your forever begins here
               </p>
 
               {/* Description */}
-              <p className="hidden md:block font-satoshi font-medium text-base leading-[22px] text-[#606060] max-w-[635px]">
+              <p
+                className={`font-satoshi font-medium text-sm md:text-base leading-[20px] md:leading-[22px] text-[#606060] max-w-[635px] ${
+                  !isDescExpanded ? 'line-clamp-2' : ''
+                } md:line-clamp-none`}
+              >
                 {event.description ||
                   'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.'}
               </p>
+
+              {/* Read more / Show less toggle — mobile only */}
+              <button
+                onClick={() => setIsDescExpanded((prev) => !prev)}
+                className="md:hidden inline-flex items-center gap-1 text-[#C55F61] font-satoshi font-bold text-sm hover:opacity-80 transition-opacity"
+              >
+                {isDescExpanded ? (
+                  <>
+                    Show less <ChevronUp className="w-4 h-4" />
+                  </>
+                ) : (
+                  <>
+                    Read more <ChevronDown className="w-4 h-4" />
+                  </>
+                )}
+              </button>
 
               {/* CTA Row */}
               <div className="flex flex-wrap items-center gap-6">
@@ -312,6 +334,7 @@ const EventDetailsPage = () => {
 
                 {/* Share Event */}
                 <button
+                  ref={shareButtonRef}
                   onClick={() => setIsShareOpen(true)}
                   className="inline-flex items-center gap-2 text-[#C55F61] font-satoshi font-bold text-base leading-[22px] hover:opacity-80 transition-opacity"
                 >
@@ -394,6 +417,7 @@ const EventDetailsPage = () => {
         onClose={() => setIsShareOpen(false)}
         event={event}
         onToast={handleToast}
+        triggerRef={shareButtonRef}
       />
 
       {/* Toast notification for share fallback */}

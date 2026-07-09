@@ -88,7 +88,7 @@ const SHARE_TARGETS = [
   },
 ];
 
-export default function ShareModal({ isOpen, onClose, event, onToast }) {
+export default function ShareModal({ isOpen, onClose, event, onToast, triggerRef }) {
   const [copied, setCopied] = useState(false);
   const overlayRef = useRef(null);
   const cardRef = useRef(null);
@@ -161,9 +161,17 @@ export default function ShareModal({ isOpen, onClose, event, onToast }) {
   );
 
   useEffect(() => {
+    if (!isOpen) return;
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
+  }, [isOpen, handleKeyDown]);
+
+  // Return focus to trigger element on close
+  useEffect(() => {
+    if (!isOpen && triggerRef?.current) {
+      triggerRef.current.focus();
+    }
+  }, [isOpen, triggerRef]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {

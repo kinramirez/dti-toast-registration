@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { getEvents } from '@/api/events';
 import { normalizeEvent, isEventUpcoming } from '@/lib/utils/eventUtils';
 import HeroSection from '@/features/events/components/HeroSection';
@@ -12,51 +12,116 @@ const GRID_PAGE_SIZE = 8;
 
 const Events = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [allEvents, setAllEvents] = useState([]); // raw normalized events from API
+  const [events, setEvents] = useState([]); // single page of results
   const [eventsLoading, setEventsLoading] = useState(true);
   const [eventsError, setEventsError] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Mobile "Load More" state
-  const [isMobile, setIsMobile] = useState(false);
-  const [mobileVisibleCount, setMobileVisibleCount] = useState(GRID_PAGE_SIZE);
+  // Search filters state
+  const [searchFilters, setSearchFilters] = useState({
+    keyword: '',
+    region: '',
+    startDateFrom: '',
+    startDateTo: '',
+  });
 
-  // Detect mobile via matchMedia
+  // Featured event from dedicated API call
+  const [featuredEvent, setFeaturedEvent] = useState(null);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+
+  // API-derived total pages
+  const [apiTotalPages, setApiTotalPages] = useState(1);
+
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobilePage, setMobilePage] = useState(1);
+
+  // Detect mobile via matchMedia — also reset pagination on breakpoint change
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 767px)');
-    const handler = (e) => setIsMobile(e.matches);
+    const handler = (e) => {
+      setIsMobile(e.matches);
+      setCurrentPage(1);
+      setMobilePage(1);
+    };
     setIsMobile(mql.matches);
     mql.addEventListener('change', handler);
     return () => mql.removeEventListener('change', handler);
   }, []);
 
-  // Fetch all events once, then paginate client-side
+  // Fetch featured event — fetch all events without date filter, then find featured client-side
+  // This avoids the startDateFrom issue where a featured multi-month event
+  // (startDate in past, endDate in future) would be excluded by the server.
   useEffect(() => {
     let cancelled = false;
-    async function loadAllEvents() {
-      setEventsLoading(true);
+    async function loadFeatured() {
+      setFeaturedLoading(true);
+      try {
+        // Fetch all events (no startDateFrom) to find the featured one
+        const data = await getEvents({ limit: 100 });
+        if (!cancelled) {
+          const rawEvents = data.events || [];
+          const normalized = rawEvents.map(normalizeEvent);
+          // Filter upcoming, then find featured (or first upcoming as fallback)
+          const upcoming = normalized.filter(isEventUpcoming);
+          const featured = upcoming.find((e) => e.isFeatured) || upcoming[0] || null;
+          setFeaturedEvent(featured);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load featured event:', error);
+          setFeaturedEvent(null);
+        }
+      } finally {
+        if (!cancelled) setFeaturedLoading(false);
+      }
+    }
+    loadFeatured();
+    return () => { cancelled = true; };
+  }, [refreshTrigger]);
+
+  // Fetch events page (server-side pagination)
+  // NOTE: We do NOT pass startDateFrom to the server because the API filters by startDate,
+  // which excludes multi-month events whose startDate is in the past but endDate is in the future.
+  // Instead, we filter client-side with isEventUpcoming() which checks endDate.
+  useEffect(() => {
+    let cancelled = false;
+    const isLoadMore = isMobile && mobilePage > 1;
+
+    async function loadEvents() {
+      // Only show full-page spinner on initial load or desktop page change, not on mobile Load More
+      if (!isLoadMore) {
+        setEventsLoading(true);
+      }
       setEventsError(null);
       try {
-        const SAFETY_CAP = 500;
-        const allFetched = [];
-        let page = 1;
-        let hasMore = true;
+        const page = isMobile ? mobilePage : currentPage;
+        // Fetch +1 extra to account for the featured event being removed from the grid
+        const params = {
+          page,
+          limit: GRID_PAGE_SIZE + 1,
+        };
 
-        while (hasMore && allFetched.length < SAFETY_CAP) {
-          const data = await getEvents({ page, limit: 100 });
-          if (!data.events || data.events.length === 0) break;
+        // Add search filters if present (user-initiated date filters still passed through)
+        if (searchFilters.region) params.region = searchFilters.region;
+        if (searchFilters.startDateFrom) params.startDateFrom = searchFilters.startDateFrom;
+        if (searchFilters.startDateTo) params.startDateTo = searchFilters.startDateTo;
 
-          allFetched.push(...data.events);
-
-          if (page >= (data.totalPages || 1)) {
-            hasMore = false;
-          } else {
-            page++;
-          }
-        }
+        const data = await getEvents(params);
 
         if (!cancelled) {
-          setAllEvents(allFetched.map(normalizeEvent));
+          const rawEvents = data.events || [];
+          const normalized = rawEvents.map(normalizeEvent);
+          // Filter upcoming client-side — correctly handles multi-month events
+          // (events with startDate in the past but endDate in the future)
+          const upcoming = normalized.filter(isEventUpcoming);
+          // Mobile Load More: accumulate events; Desktop/initial: replace
+          if (isLoadMore) {
+            setEvents((prev) => [...prev, ...upcoming]);
+          } else {
+            setEvents(upcoming);
+          }
+          setApiTotalPages(data.totalPages || 1);
         }
       } catch (error) {
         if (!cancelled) {
@@ -68,43 +133,54 @@ const Events = () => {
       }
     }
 
-    loadAllEvents();
+    loadEvents();
     return () => { cancelled = true; };
-  }, [refreshTrigger]);
+  }, [currentPage, mobilePage, searchFilters, refreshTrigger, isMobile]);
 
-  // Filter to upcoming events only, then derive featured + grid
-  const { featuredEvent, gridEvents, totalPages } = useMemo(() => {
-    const upcoming = allEvents.filter(isEventUpcoming);
+  // Handle search from SearchBar
+  const handleSearch = useCallback((filters) => {
+    setSearchFilters(filters);
+    setCurrentPage(1);
+    setMobilePage(1);
+  }, []);
 
-    const featured =
-      upcoming.find((e) => e.isFeatured) ||
-      upcoming[0] ||
-      null;
+  // Handle page change (desktop pagination only — mobile uses handleLoadMore)
+  const handlePageChange = useCallback((page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
-    const grid = upcoming.filter((e) => e.id !== featured?.id);
-
-    return {
-      featuredEvent: featured,
-      gridEvents: grid,
-      totalPages: Math.max(1, Math.ceil(grid.length / GRID_PAGE_SIZE)),
-    };
-  }, [allEvents]);
-
-  // Slice grid for current page
-  const currentPageGrid = useMemo(() => {
-    if (isMobile) {
-      return gridEvents.slice(0, mobileVisibleCount);
-    }
-    const start = (currentPage - 1) * GRID_PAGE_SIZE;
-    return gridEvents.slice(start, start + GRID_PAGE_SIZE);
-  }, [gridEvents, currentPage, isMobile, mobileVisibleCount]);
-
+  // Mobile "Load More" increments mobilePage
   const handleLoadMore = () => {
-    setMobileVisibleCount((prev) => prev + GRID_PAGE_SIZE);
+    setMobilePage((prev) => prev + 1);
   };
 
-  const isEmpty = !eventsLoading && !eventsError && gridEvents.length === 0;
-  const hasMoreMobile = isMobile && mobileVisibleCount < gridEvents.length;
+  // Check if any search filter is active
+  const hasActiveFilters = searchFilters.region || searchFilters.startDateFrom || searchFilters.startDateTo || searchFilters.keyword;
+
+  // Grid events: filter out featured from current page events
+  // Skip dedup when filters are active — the featured event was fetched without filters
+  // and may be the only matching result in the filtered grid
+  const gridEvents = useMemo(() => {
+    if (!featuredEvent || hasActiveFilters) return events;
+    return events.filter((e) => e.id !== featuredEvent.id);
+  }, [events, featuredEvent, hasActiveFilters]);
+
+  // Client-side keyword filter over grid events
+  const keywordFilteredEvents = useMemo(() => {
+    if (!searchFilters.keyword) return gridEvents;
+    const kw = searchFilters.keyword.toLowerCase();
+    return gridEvents.filter(
+      (e) =>
+        e.title?.toLowerCase().includes(kw) ||
+        e.description?.toLowerCase().includes(kw) ||
+        e.location?.toLowerCase().includes(kw),
+    );
+  }, [gridEvents, searchFilters.keyword]);
+
+  const isEmpty = !eventsLoading && !eventsError && keywordFilteredEvents.length === 0 && currentPage === 1 && mobilePage === 1;
+  const hasMoreMobile = isMobile && mobilePage < apiTotalPages;
+
 
   return (
     <div className="bg-white min-h-screen animate-page-in">
@@ -112,7 +188,7 @@ const Events = () => {
       <HeroSection />
 
       {/* Search Bar */}
-      <SearchBar />
+      <SearchBar onSearch={handleSearch} />
 
       {/* Main content area */}
       <div className="max-w-container mx-auto px-4 sm:px-6 md:px-8 py-[60px]">
@@ -142,10 +218,57 @@ const Events = () => {
           </div>
         ) : (
           <>
-            {/* Featured Event — always shown if exists */}
-            {featuredEvent && (
-              <FeaturedEvent event={featuredEvent} />
-            )}
+            {/* Featured Event — with fallback when no featured event exists
+                or when the featured event doesn't match the active date filter */}
+            {(() => {
+              // Determine if featured event should be shown — validate against ALL active filters
+              const showFeatured = (() => {
+                if (!featuredEvent || featuredLoading) return false;
+                if (!hasActiveFilters) return true;
+
+                // Check startDateFrom: featured startDate must be >= filter startDateFrom
+                if (searchFilters.startDateFrom) {
+                  if (new Date(featuredEvent.startDate) < new Date(searchFilters.startDateFrom)) return false;
+                }
+                // Check startDateTo: featured startDate must be <= filter startDateTo
+                if (searchFilters.startDateTo) {
+                  if (new Date(featuredEvent.startDate) > new Date(searchFilters.startDateTo)) return false;
+                }
+                // Check region: case-insensitive substring match on rawRegion
+                if (searchFilters.region) {
+                  const featRegion = (featuredEvent.rawRegion || '').toLowerCase();
+                  const filterRegion = searchFilters.region.toLowerCase();
+                  if (!featRegion.includes(filterRegion)) return false;
+                }
+                // Check keyword: case-insensitive match on title
+                if (searchFilters.keyword) {
+                  const kw = searchFilters.keyword.toLowerCase();
+                  if (!(featuredEvent.title || '').toLowerCase().includes(kw)) return false;
+                }
+                return true;
+              })();
+
+              if (showFeatured) {
+                return <FeaturedEvent event={featuredEvent} />;
+              }
+
+              // Fallback: left-aligned section heading + centered empty state
+              return (
+                <div className="animate-fade-in-up">
+                  <h2 className="text-xl font-bold text-[#121212] mb-6 font-satoshi uppercase tracking-wider text-left">
+                    FEATURED EVENTS
+                  </h2>
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <h3 className="text-2xl font-bold text-[#5D5D5D] mb-3 font-satoshi">
+                      No Featured Events Available
+                    </h3>
+                    <p className="text-sm text-[#ACACAC] max-w-md leading-relaxed font-satoshi">
+                      No featured events at this time. Check back soon!
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Upcoming Wedding Fairs section */}
             <div className="animate-fade-in-up delay-100">
@@ -156,7 +279,7 @@ const Events = () => {
                 UPCOMING WEDDING FAIRS
               </h2>
 
-              {isEmpty && currentPage === 1 ? (
+              {isEmpty ? (
                 <div className="flex flex-col items-center justify-center py-24 text-center">
                   <h3 className="text-2xl font-bold text-[#5D5D5D] mb-3 font-satoshi">
                     No Events Available at This Time
@@ -170,7 +293,7 @@ const Events = () => {
                   <div
                     className="grid grid-cols-2 lg:grid-cols-4 gap-x-[16px] md:gap-x-[10px] gap-y-[34px]"
                   >
-                    {currentPageGrid.map((event, index) => (
+                    {keywordFilteredEvents.map((event, index) => (
                       <EventCard
                         key={event.id}
                         event={event}
@@ -205,11 +328,11 @@ const Events = () => {
                       </div>
                     )
                   ) : (
-                    totalPages > 1 && (
+                    apiTotalPages > 1 && (
                       <EventPagination
                         currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
+                        totalPages={apiTotalPages}
+                        onPageChange={handlePageChange}
                       />
                     )
                   )}
