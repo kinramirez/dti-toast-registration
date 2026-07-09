@@ -33,7 +33,7 @@ const LEGAL_CONTENT = {
   },
 };
 
-export default function LegalModal({ isOpen, onClose, type = 'privacy' }) {
+export default function LegalModal({ isOpen, onClose, type = 'privacy', triggerRef }) {
   const overlayRef = useRef(null);
   const cardRef = useRef(null);
   const closeButtonRef = useRef(null);
@@ -97,9 +97,17 @@ export default function LegalModal({ isOpen, onClose, type = 'privacy' }) {
   );
 
   useEffect(() => {
+    if (!isOpen) return;
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
+  }, [isOpen, handleKeyDown]);
+
+  // Return focus to trigger element on close
+  useEffect(() => {
+    if (!isOpen && triggerRef?.current) {
+      triggerRef.current.focus();
+    }
+  }, [isOpen, triggerRef]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
