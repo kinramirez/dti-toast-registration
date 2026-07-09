@@ -8,7 +8,7 @@ const EventCard = ({ event, className = '', style }) => {
   const navigate = useNavigate();
 
   // Derive city badge from event.rawRegion (preserved original value from API)
-  const cityBadge = event.rawRegion || event.region || 'MANILA';
+  const cityBadge = (event.rawRegion || event.region || 'MANILA').toUpperCase();
 
   const handleViewDetails = () => {
     navigate(`/event/${event.id}`, { state: { event } });
