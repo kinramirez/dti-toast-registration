@@ -15,7 +15,7 @@ import RegistrationStep1 from './sections/RegistrationStep1';
 import RegistrationStep2 from './sections/RegistrationStep2';
 import RegistrationSuccess from './sections/RegistrationSuccess';
 
-export default function EventFormPage() {
+export default function EventFormPage({ event: propEvent, hideBackLink = false, hideViewEventButton = false }) {
   const [form, setForm] = useState(initialForm);
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,7 +24,7 @@ export default function EventFormPage() {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const event = location.state?.event;
+  const event = location.state?.event ?? propEvent;
   const eventGuId = event?.guid ?? event?.id ?? event?.eventGuId ?? event?.guId;
   const {
     regionCode,
@@ -263,7 +263,7 @@ export default function EventFormPage() {
   return (
     <div className='relative z-10 bg-white'>
       {/* ── Hero Band (Steps 1 & 2 only; Step 3 has its own hero) ── */}
-      {(step === 1 || step === 2) && <RegistrationHero eventId={eventGuId} />}
+      {(step === 1 || step === 2) && <RegistrationHero eventId={eventGuId} hideBackLink={hideBackLink} />}
 
       {/* ── Steps 1 & 2: Two-Column Layout ── */}
       {(step === 1 || step === 2) && (
@@ -347,6 +347,7 @@ export default function EventFormPage() {
               userEmail={form.email}
               event={event}
               onBackToHome={handleBackToHome}
+              hideViewEventButton={hideViewEventButton}
             />
           </motion.div>
         </AnimatePresence>

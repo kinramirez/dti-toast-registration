@@ -11,6 +11,7 @@ import {
   Search,
   PartyPopper,
 } from 'lucide-react';
+import dtiLogo from '@/assets/dtilogo.png';
 import toastSuccessBg from '@/assets/toast-success-bg.png';
 import Footer from '@/components/Footer';
 import ContactStrip from '@/features/events/components/ContactStrip';
@@ -208,7 +209,7 @@ function WhatsNextTimeline() {
   );
 }
 
-function RegisteredEventCard({ event }) {
+function RegisteredEventCard({ event, hideViewButton = false }) {
   const navigate = useNavigate();
 
   if (!event) {
@@ -257,7 +258,7 @@ function RegisteredEventCard({ event }) {
 
   // Location
   const locationName = event.location || '';
-  const cityName = event.city || event.region || '';
+  const cityName = event.city || event.rawRegion || '';
 
   const isFeatured = event.featured || event.isFeatured;
 
@@ -274,22 +275,15 @@ function RegisteredEventCard({ event }) {
       >
         {/* Left: Event Photo */}
         <div className="flex-shrink-0">
-          {eventImage ? (
-            <img
-              src={eventImage}
-              alt={eventTitle}
-              className="w-full lg:w-[360px] h-[240px] lg:h-[360px] rounded-lg object-cover"
-            />
-          ) : (
-            <div
-              className="w-full lg:w-[360px] h-[240px] lg:h-[360px] rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: '#F1F1F1' }}
-            >
-              <span className="font-satoshi text-[14px]" style={{ color: '#808080' }}>
-                No image available
-              </span>
-            </div>
-          )}
+          <img
+            src={eventImage || dtiLogo}
+            alt={eventTitle}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = dtiLogo;
+            }}
+            className="w-full lg:w-[360px] h-[240px] lg:h-[360px] rounded-lg object-cover"
+          />
         </div>
 
         {/* Center: Event Details */}
@@ -390,6 +384,7 @@ function RegisteredEventCard({ event }) {
             ))}
           </ul>
 
+          {!hideViewButton && (
           <button
             type="button"
             onClick={() => {
@@ -407,6 +402,7 @@ function RegisteredEventCard({ event }) {
           >
             View Event Details &rarr;
           </button>
+          )}
         </div>
       </div>
     </section>
@@ -417,7 +413,7 @@ function RegisteredEventCard({ event }) {
    Main RegistrationSuccess component
    ─────────────────────────────────────────── */
 
-export default function RegistrationSuccess({ userEmail, event, onBackToHome }) {
+export default function RegistrationSuccess({ userEmail, event, onBackToHome, hideViewEventButton = false }) {
   return (
     <div className="relative z-10 bg-white min-h-screen flex flex-col">
       {/* Content area — fills available space, pushes footer down */}
@@ -432,7 +428,7 @@ export default function RegistrationSuccess({ userEmail, event, onBackToHome }) 
         <WhatsNextTimeline />
 
         {/* 4. Registered Event Card */}
-        <RegisteredEventCard event={event} />
+        <RegisteredEventCard event={event} hideViewButton={hideViewEventButton} />
 
         {/* 5. Support Strip — reuses existing ContactStrip from event details page */}
         <ContactStrip />

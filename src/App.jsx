@@ -9,6 +9,7 @@ import ContactUs from './pages/ContactUs'
 import EventFormPage from './pages/EventFormPage'
 import EventPage from './pages/EventPage'
 import EventDetailsPage from './pages/EventDetailsPage'
+import TemporaryLanding from './pages/TemporaryLanding'
 
 function ScrollBehavior() {
   const { pathname, hash } = useLocation()
@@ -29,8 +30,8 @@ function ScrollBehavior() {
 
 function AppFrame() {
   const location = useLocation()
-  const isEventPage = location.pathname.startsWith('/event') || location.pathname === '/' || location.pathname === '/contact'
-  const isEventRegisterPage = location.pathname === '/event/register'
+  const isEventPage = location.pathname.startsWith('/event') || location.pathname === '/contact'
+  const isEventRegisterPage = location.pathname === '/event/register' || location.pathname === '/'
   const isEventDetailsPage = /^\/event\/[^/]+$/.test(location.pathname) && !isEventRegisterPage
   const isContactPage = location.pathname === '/contact'
 
@@ -46,18 +47,18 @@ function AppFrame() {
   return (
     <div className="appShell">
       
-      {isEventPage ? (
+      {!isEventRegisterPage && (isEventPage ? (
         <EventsHeader
           title={getTitle()}
           breadcrumb={undefined}
         />
       ) : (
         <Header />
-      )}
+      ))}
       <ScrollBehavior />
       <main className="appMain">
         <Routes>
-          <Route path="/" element={<EventPage />} />
+          <Route path="/" element={<TemporaryLanding />} />
           <Route path="/event/register" element={<EventFormPage />} />
           <Route path="/event/:id" element={<EventDetailsPage />} />
           <Route path="/contact" element={<ContactUs />} />
