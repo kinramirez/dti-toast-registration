@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import dtiLogoWhite from '@/assets/toast_logo_white.png';
 import LegalModal from '@/components/ui/LegalModal';
 
@@ -26,6 +26,9 @@ const TikTokIcon = () => (
 export const Footer = () => {
   const [isLegalOpen, setIsLegalOpen] = useState(false);
   const [legalType, setLegalType] = useState('privacy');
+  const privacyButtonRef = useRef(null);
+  const termsButtonRef = useRef(null);
+  const [legalTriggerRef, setLegalTriggerRef] = useState(null);
 
   return (
     <footer className="text-white" style={{ backgroundColor: '#C55F61' }} aria-label="Site footer">
@@ -67,16 +70,18 @@ export const Footer = () => {
           </p>
           <div className="flex items-center gap-4">
             <button
+              ref={privacyButtonRef}
               type="button"
-              onClick={() => { setLegalType('privacy'); setIsLegalOpen(true); }}
+              onClick={() => { setLegalType('privacy'); setLegalTriggerRef(privacyButtonRef); setIsLegalOpen(true); }}
               className="text-xs text-[#FEB5B6] hover:text-white transition-colors font-satoshi bg-transparent border-none cursor-pointer"
             >
               Privacy Policy
             </button>
             <span className="text-[#FEB5B6] text-xs">&middot;</span>
             <button
+              ref={termsButtonRef}
               type="button"
-              onClick={() => { setLegalType('terms'); setIsLegalOpen(true); }}
+              onClick={() => { setLegalType('terms'); setLegalTriggerRef(termsButtonRef); setIsLegalOpen(true); }}
               className="text-xs text-[#FEB5B6] hover:text-white transition-colors font-satoshi bg-transparent border-none cursor-pointer"
             >
               Terms of Use
@@ -90,6 +95,7 @@ export const Footer = () => {
         isOpen={isLegalOpen}
         onClose={() => setIsLegalOpen(false)}
         type={legalType}
+        triggerRef={legalTriggerRef}
       />
     </footer>
   );
