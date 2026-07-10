@@ -174,3 +174,48 @@ export const isEventUpcoming = (event) => {
     : new Date(event.startDate);
   return !isNaN(eventDate.getTime()) && eventDate >= now;
 };
+
+/**
+ * Determines whether an event's date range overlaps with a user-supplied filter range.
+ *
+ * An event matches if:
+ *   - event.endDate (or event.startDate if no endDate) >= filter.startDateFrom
+ *   - AND event.startDate <= filter.startDateTo (or filter.startDateFrom if no startDateTo)
+ *
+ * This correctly handles multi-month/ongoing events whose startDate may be before
+ * the filter window but whose endDate is still within or after it.
+ *
+ * @param {Object} event - Normalized event object with startDate and optional endDate
+ * @param {string} startDateFrom - Filter lower bound (ISO date string or empty)
+ * @param {string} startDateTo - Filter upper bound (ISO date string or empty)
+ * @returns {boolean} True if the event's date range overlaps with the filter range
+ */
+export const isEventInDateRange = (event, startDateFrom, startDateTo) => {
+  // If no date filters are active, the event passes
+  if (!startDateFrom && !startDateTo) return true;
+
+  // Determine the event's date range
+  const eventStart = new Date(event.startDate);
+  eventStart.setHours(0, 0, 0, 0); // normalize to start of day
+
+  const eventEnd = event.endDate
+    ? new Date(event.endDate)
+    : eventStart; // single-day event fallback
+  eventEnd.setHours(23, 59, 59, 999); // normalize to end of day
+
+  // Check lower bound: the event must not end before the filter starts
+  if (startDateFrom) {
+    const filterStart = new Date(startDateFrom);
+    filterStart.setHours(0, 0, 0, 0);
+    if (eventEnd < filterStart) return false;
+  }
+
+  // Check upper bound: the event must not start after the filter ends
+  if (startDateTo) {
+    const filterEnd = new Date(startDateTo);
+    filterEnd.setHours(23, 59, 59, 999);
+    if (eventStart > filterEnd) return false;
+  }
+
+  return true;
+};
