@@ -2,7 +2,7 @@ import React from 'react';
 import { Headset, Phone, Mail, Facebook } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const ContactStrip = () => {
+const ContactStrip = ({ hideContactLink = false }) => {
   return (
     <section className="max-w-container mx-auto px-8 max-sm:px-6 py-8">
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
@@ -77,12 +77,14 @@ const ContactStrip = () => {
               <p className="font-satoshi font-bold text-sm leading-[19px] text-[#121212]">
                 toastweddingfair
               </p>
+              {!hideContactLink && (
               <Link
                 to="/contact"
                 className="font-satoshi font-bold text-sm leading-[19px] text-[#808080] hover:text-[#C55F61] transition-colors mt-1 inline-block"
               >
                 Send us a message
               </Link>
+              )}
             </div>
           </div>
         </div>

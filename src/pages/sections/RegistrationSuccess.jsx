@@ -413,7 +413,7 @@ function RegisteredEventCard({ event, hideViewButton = false }) {
    Main RegistrationSuccess component
    ─────────────────────────────────────────── */
 
-export default function RegistrationSuccess({ userEmail, event, onBackToHome, hideViewEventButton = false }) {
+export default function RegistrationSuccess({ userEmail, event, onBackToHome, hideViewEventButton = false, hideContactLink = false }) {
   return (
     <div className="relative z-10 bg-white min-h-screen flex flex-col">
       {/* Content area — fills available space, pushes footer down */}
@@ -431,7 +431,7 @@ export default function RegistrationSuccess({ userEmail, event, onBackToHome, hi
         <RegisteredEventCard event={event} hideViewButton={hideViewEventButton} />
 
         {/* 5. Support Strip — reuses existing ContactStrip from event details page */}
-        <ContactStrip />
+        <ContactStrip hideContactLink={hideContactLink} />
       </div>
 
       {/* 6. Footer — sticks to bottom */}
