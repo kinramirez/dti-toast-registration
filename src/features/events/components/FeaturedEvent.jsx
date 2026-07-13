@@ -36,7 +36,7 @@ const FeaturedEvent = ({ event }) => {
   };
 
   const handleRegister = () => {
-    navigate(`/event/register/${event.guid || event.id}`, { state: { event } });
+    navigate('/event/register', { state: { event } });
   };
 
   // Format date range with day names
