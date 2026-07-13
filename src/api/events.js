@@ -1,9 +1,9 @@
 import apiClient from './client.js';
 import { normalizeEvent } from '@/lib/utils/eventUtils';
 
-export async function getEvents({ page = 1, limit = 10, month, year, region, startDateFrom, startDateTo, isFeatured } = {}) {
+export async function getEvents({ page = 1, limit = 10, region, startDateFrom, startDateTo, endDateFrom, isFeatured } = {}) {
   const response = await apiClient.get('/event-registrations/events', {
-    params: { page, limit, month, year, region, startDateFrom, startDateTo, isFeatured },
+    params: { page, limit, region, startDateFrom, startDateTo, endDateFrom, isFeatured },
   });
   const raw = response.data;
   console.log('[getEvents] raw response:', raw);
@@ -27,6 +27,18 @@ export async function getEvents({ page = 1, limit = 10, month, year, region, sta
     currentPage,
     limit: raw?.limit ?? raw?.meta?.limit ?? limit,
   };
+}
+
+export async function getEventLocations() {
+  try {
+    const response = await apiClient.get('/event-registrations/events/locations');
+    const raw = response.data;
+    const locations = raw?.data ?? (Array.isArray(raw) ? raw : []);
+    return Array.isArray(locations) ? locations : [];
+  } catch (error) {
+    console.error('Failed to fetch event locations:', error);
+    return [];
+  }
 }
 
 export async function getEventById(eventGuid) {

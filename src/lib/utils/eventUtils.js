@@ -80,7 +80,7 @@ export const getEventMonthKey = (startDate) => {
 };
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'https://api-dti.myiiap.com/api/v1';
+  import.meta.env.VITE_API_BASE_URL || 'https://api.toastweddingfair.ph/api/v1';
 
 const getImageCandidate = (value) => {
   if (!value) return '';
@@ -148,8 +148,43 @@ const getEventImageUrl = (event) => {
   return resolveImageUrl(imageUrl);
 };
 
+/**
+ * Safely parses a value that may be a JSON string or an already-parsed object/array.
+ * Returns null for null/undefined input, the original value if already an object,
+ * or the parsed result. Returns null on parse failure.
+ */
+function safeJsonParse(value) {
+  if (value == null) return null;
+  if (typeof value === 'object') return value; // already parsed (future-proof)
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
 export const normalizeEvent = (event) => {
   const imageUrl = getEventImageUrl(event);
+
+  // Parse JSON-stringified fields
+  const highlights = safeJsonParse(event.highlights);
+  const whatToExpect = safeJsonParse(event.whatToExpect);
+
+  // Coerce numeric fields (distinguish 0 from null/missing)
+  const latitude =
+    event.latitude != null && event.latitude !== ''
+      ? Number(event.latitude)
+      : null;
+  const longitude =
+    event.longitude != null && event.longitude !== ''
+      ? Number(event.longitude)
+      : null;
+  const exhibitors =
+    event.exhibitors != null ? Number(event.exhibitors) : null;
+  const daysOfInspiration =
+    event.daysOfInspiration != null
+      ? Number(event.daysOfInspiration)
+      : null;
 
   return {
     ...event,
@@ -162,6 +197,18 @@ export const normalizeEvent = (event) => {
     description: event.description ?? '',
     buttonText: event.buttonText || 'Register',
     image: imageUrl,
+    // New API fields
+    highlights: Array.isArray(highlights) ? highlights : [],
+    whatToExpect: Array.isArray(whatToExpect) ? whatToExpect : [],
+    latitude: Number.isNaN(latitude) ? null : latitude,
+    longitude: Number.isNaN(longitude) ? null : longitude,
+    venueAddress: event.venueAddress ?? null,
+    venuePhoto: event.venuePhoto ?? null,
+    tagline: event.tagline ?? null,
+    exhibitors: Number.isNaN(exhibitors) ? null : exhibitors,
+    daysOfInspiration: Number.isNaN(daysOfInspiration)
+      ? null
+      : daysOfInspiration,
   };
 };
 
@@ -173,4 +220,79 @@ export const isEventUpcoming = (event) => {
     ? new Date(event.endDate)
     : new Date(event.startDate);
   return !isNaN(eventDate.getTime()) && eventDate >= now;
+};
+
+/**
+ * Determines whether an event's date range overlaps with a user-supplied filter range.
+ *
+ * An event matches if:
+ *   - event.endDate (or event.startDate if no endDate) >= filter.startDateFrom
+ *   - AND event.startDate <= filter.startDateTo (or filter.startDateFrom if no startDateTo)
+ *
+ * This correctly handles multi-month/ongoing events whose startDate may be before
+ * the filter window but whose endDate is still within or after it.
+ *
+ * @param {Object} event - Normalized event object with startDate and optional endDate
+ * @param {string} startDateFrom - Filter lower bound (ISO date string or empty)
+ * @param {string} startDateTo - Filter upper bound (ISO date string or empty)
+ * @returns {boolean} True if the event's date range overlaps with the filter range
+ */
+export const isEventInDateRange = (event, startDateFrom, startDateTo) => {
+  // If no date filters are active, the event passes
+  if (!startDateFrom && !startDateTo) return true;
+
+  // Helper: parse a date string safely.
+  // - Date-only strings (YYYY-MM-DD) are parsed as local midnight to avoid
+  //   UTC-midnight interpretation (new Date("2026-07-15") → UTC midnight,
+  //   which in UTC+8 shifts to 8:00 AM local).
+  // - ISO 8601 timestamps are parsed via standard new Date().
+  // - Returns null for invalid / falsy inputs.
+  const parseDateLocal = (dateString) => {
+    if (!dateString) return null;
+    // Date-only string: YYYY-MM-DD (no time component)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      const [year, month, day] = dateString.split('-').map(Number);
+      return new Date(year, month - 1, day); // local midnight
+    }
+    // ISO 8601 timestamp or other format — standard parsing
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  // --- Parse event dates with validation ---
+
+  const eventStart = parseDateLocal(event.startDate);
+  if (eventStart === null) return false; // invalid event start date → exclude
+  eventStart.setHours(0, 0, 0, 0); // normalize to start of day
+
+  let eventEnd;
+  if (event.endDate) {
+    eventEnd = parseDateLocal(event.endDate);
+    if (eventEnd === null) return false; // invalid event end date → exclude
+  } else {
+    // CRITICAL: new Date(existingDate) creates a COPY, not a shared reference.
+    // This prevents eventEnd.setHours() from mutating eventStart.
+    eventEnd = new Date(eventStart);
+  }
+  eventEnd.setHours(23, 59, 59, 999); // normalize to end of day
+
+  // --- Check lower bound: event must not end before filter starts ---
+
+  if (startDateFrom) {
+    const filterStart = parseDateLocal(startDateFrom);
+    if (filterStart === null) return true; // invalid filter → don't exclude (graceful)
+    filterStart.setHours(0, 0, 0, 0);
+    if (eventEnd < filterStart) return false;
+  }
+
+  // --- Check upper bound: event must not start after filter ends ---
+
+  if (startDateTo) {
+    const filterEnd = parseDateLocal(startDateTo);
+    if (filterEnd === null) return true; // invalid filter → don't exclude (graceful)
+    filterEnd.setHours(23, 59, 59, 999);
+    if (eventStart > filterEnd) return false;
+  }
+
+  return true;
 };

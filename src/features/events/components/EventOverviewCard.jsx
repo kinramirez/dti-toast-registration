@@ -16,13 +16,6 @@ const DESCRIPTION_LIMIT = 200;
 const PLACEHOLDER_DESCRIPTION =
   'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.';
 
-const CHECKLIST_ITEMS = [
-  "Meet and connect with the country's best wedding suppliers",
-  'Enjoy exclusive event-only discounts and packages',
-  'Be inspired by fashion shows, live performances, and more',
-  'Get a chance to win exciting raffle prizes',
-];
-
 const EventOverviewCard = ({ event }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
@@ -102,7 +95,9 @@ const EventOverviewCard = ({ event }) => {
                   {timeRangeLabel}
                 </p>
                 <p className="font-satoshi font-normal text-xs leading-4 text-[#606060] mt-0.5">
-                  Both Days
+                  {event?.daysOfInspiration != null
+                    ? `All ${event.daysOfInspiration} Days`
+                    : 'Both Days'}
                 </p>
               </div>
             </div>
@@ -115,8 +110,8 @@ const EventOverviewCard = ({ event }) => {
                   {event?.location || 'TBA'}
                 </p>
                 <p className="font-satoshi font-normal text-xs leading-4 text-[#606060] mt-0.5">
-                  Gil Puyat Ave. cor. Diosdado Macapagal Blvd., Pasay City,
-                  Metro Manila
+                  {event?.venueAddress ||
+                    'Gil Puyat Ave. cor. Diosdado Macapagal Blvd., Pasay City, Metro Manila'}
                 </p>
               </div>
             </div>
@@ -126,7 +121,9 @@ const EventOverviewCard = ({ event }) => {
               <Users className="w-6 h-6 text-[#C55F61] shrink-0 mt-0.5" />
               <div>
                 <p className="font-satoshi font-medium text-base leading-[22px] text-[#121212]">
-                  10,000+ Couples & Families
+                  {event?.noOfParticipants != null
+                    ? `${event.noOfParticipants.toLocaleString()}+ Attendees`
+                    : 'TBA'}
                 </p>
                 <p className="font-satoshi font-normal text-xs leading-4 text-[#606060] mt-0.5">
                   Expected Attendees
@@ -139,7 +136,9 @@ const EventOverviewCard = ({ event }) => {
               <IdCard className="w-6 h-6 text-[#C55F61] shrink-0 mt-0.5" />
               <div>
                 <p className="font-satoshi font-medium text-base leading-[22px] text-[#121212]">
-                  200+ Top Wedding Suppliers
+                  {event?.exhibitors != null
+                    ? `${event.exhibitors}+ Exhibitors`
+                    : 'TBA'}
                 </p>
                 <p className="font-satoshi font-normal text-xs leading-4 text-[#606060] mt-0.5">
                   Exhibitors
@@ -178,7 +177,7 @@ const EventOverviewCard = ({ event }) => {
 
           {/* Checklist */}
           <div className="space-y-4">
-            {CHECKLIST_ITEMS.map((item, idx) => (
+            {(event?.highlights || []).map((item, idx) => (
               <div key={idx} className="flex items-start gap-4">
                 <div className="w-5 h-5 rounded-full bg-[rgba(197,95,97,0.1)] flex items-center justify-center shrink-0 mt-0.5">
                   <Check className="w-3 h-3 text-[#C55F61]" />
