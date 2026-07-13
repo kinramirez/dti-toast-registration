@@ -80,7 +80,7 @@ export const getEventMonthKey = (startDate) => {
 };
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'https://api-dti.myiiap.com/api/v1';
+  import.meta.env.VITE_API_BASE_URL || 'https://api.toastweddingfair.ph/api/v1';
 
 const getImageCandidate = (value) => {
   if (!value) return '';
@@ -148,8 +148,43 @@ const getEventImageUrl = (event) => {
   return resolveImageUrl(imageUrl);
 };
 
+/**
+ * Safely parses a value that may be a JSON string or an already-parsed object/array.
+ * Returns null for null/undefined input, the original value if already an object,
+ * or the parsed result. Returns null on parse failure.
+ */
+function safeJsonParse(value) {
+  if (value == null) return null;
+  if (typeof value === 'object') return value; // already parsed (future-proof)
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
 export const normalizeEvent = (event) => {
   const imageUrl = getEventImageUrl(event);
+
+  // Parse JSON-stringified fields
+  const highlights = safeJsonParse(event.highlights);
+  const whatToExpect = safeJsonParse(event.whatToExpect);
+
+  // Coerce numeric fields (distinguish 0 from null/missing)
+  const latitude =
+    event.latitude != null && event.latitude !== ''
+      ? Number(event.latitude)
+      : null;
+  const longitude =
+    event.longitude != null && event.longitude !== ''
+      ? Number(event.longitude)
+      : null;
+  const exhibitors =
+    event.exhibitors != null ? Number(event.exhibitors) : null;
+  const daysOfInspiration =
+    event.daysOfInspiration != null
+      ? Number(event.daysOfInspiration)
+      : null;
 
   return {
     ...event,
@@ -162,6 +197,18 @@ export const normalizeEvent = (event) => {
     description: event.description ?? '',
     buttonText: event.buttonText || 'Register',
     image: imageUrl,
+    // New API fields
+    highlights: Array.isArray(highlights) ? highlights : [],
+    whatToExpect: Array.isArray(whatToExpect) ? whatToExpect : [],
+    latitude: Number.isNaN(latitude) ? null : latitude,
+    longitude: Number.isNaN(longitude) ? null : longitude,
+    venueAddress: event.venueAddress ?? null,
+    venuePhoto: event.venuePhoto ?? null,
+    tagline: event.tagline ?? null,
+    exhibitors: Number.isNaN(exhibitors) ? null : exhibitors,
+    daysOfInspiration: Number.isNaN(daysOfInspiration)
+      ? null
+      : daysOfInspiration,
   };
 };
 
