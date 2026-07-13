@@ -4,21 +4,32 @@ import ImageModal from '@/components/ui/ImageModal';
 import maps_placeholder from '@/assets/maps-placeholder.png';
 import wtc_placeholder from '@/assets/wtc_placeholder.png';
 
-const GOOGLE_MAPS_URL =
+const FALLBACK_GOOGLE_MAPS_URL =
   'https://www.google.com/maps/search/?api=1&query=World+Trade+Center+Metro+Manila+Gil+Puyat+Ave+Pasay+City';
+
+const getGoogleMapsUrl = (event) => {
+  const lat = event?.latitude;
+  const lng = event?.longitude;
+  if (lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng)) {
+    return `https://www.google.com/maps?q=${lat},${lng}`;
+  }
+  const query = event?.location || 'World Trade Center Metro Manila';
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+};
 
 const VenueSection = ({ event }) => {
   const [isPhotoOpen, setIsPhotoOpen] = useState(false);
 
   const venueName = event?.location || 'World Trade Center Metro Manila';
-  const venuePhoto = event?.image || wtc_placeholder;
+  const venuePhoto = event?.venuePhoto || event?.image || wtc_placeholder;
+  const mapsUrl = getGoogleMapsUrl(event);
 
   return (
     <section className="max-w-container mx-auto px-8 max-sm:px-6 py-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
         {/* Map Image */}
         <a
-          href={GOOGLE_MAPS_URL}
+          href={mapsUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="block rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
@@ -42,12 +53,12 @@ const VenueSection = ({ event }) => {
             {venueName}
           </h3>
           <p className="font-satoshi font-medium text-sm leading-[19px] text-[#606060] mb-6">
-            Gil Puyat Ave. cor. Diosdado Macapagal Blvd., Pasay City, Metro
-            Manila
+            {event?.venueAddress ||
+              'Gil Puyat Ave. cor. Diosdado Macapagal Blvd., Pasay City, Metro Manila'}
           </p>
 
           <a
-            href={GOOGLE_MAPS_URL}
+            href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg border border-[#C55F61] text-[#C55F61] font-satoshi font-bold text-sm transition-all duration-200 hover:bg-[#C55F61] hover:text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61] w-fit"

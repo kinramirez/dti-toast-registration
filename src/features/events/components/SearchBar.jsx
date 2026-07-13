@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, MapPin, Calendar, ChevronDown } from 'lucide-react';
-
-const locationOptions = ['All Locations', 'Manila', 'Cebu', 'Davao', 'Iloilo'];
+import { getEventLocations } from '@/api/events';
 
 const SearchBar = ({ onSearch }) => {
   const [keyword, setKeyword] = useState('');
@@ -10,7 +9,21 @@ const SearchBar = ({ onSearch }) => {
   const [endDate, setEndDate] = useState('');
   const [dateRangeError, setDateRangeError] = useState('');
   const [openDropdown, setOpenDropdown] = useState(null); // 'location' | null
+  const [locationOptions, setLocationOptions] = useState(['All Locations']);
   const locationRef = useRef(null);
+
+  // Fetch location options from API on mount
+  useEffect(() => {
+    let cancelled = false;
+    getEventLocations().then((locations) => {
+      if (!cancelled) {
+        setLocationOptions(['All Locations', ...locations]);
+      }
+    }).catch(() => {
+      // Keep default ['All Locations'] on error
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {

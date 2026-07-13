@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { getEvents } from '@/api/events';
-import { normalizeEvent, isEventUpcoming } from '@/lib/utils/eventUtils';
+import { normalizeEvent, isEventUpcoming, isEventInDateRange } from '@/lib/utils/eventUtils';
 import HeroSection from '@/features/events/components/HeroSection';
 import SearchBar from '@/features/events/components/SearchBar';
 import FeaturedEvent from '@/features/events/components/FeaturedEvent';
@@ -9,6 +9,7 @@ import EventPagination from '@/features/events/components/EventPagination';
 import NewsletterBand from '@/features/events/components/NewsletterBand';
 
 const GRID_PAGE_SIZE = 8;
+const FULL_FETCH_LIMIT = 100;
 
 const Events = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -80,13 +81,54 @@ const Events = () => {
     return () => { cancelled = true; };
   }, [refreshTrigger]);
 
-  // Fetch events page (server-side pagination)
-  // NOTE: We do NOT pass startDateFrom to the server because the API filters by startDate,
-  // which excludes multi-month events whose startDate is in the past but endDate is in the future.
-  // Instead, we filter client-side with isEventUpcoming() which checks endDate.
+  // Ref to track the previous values of fetch-relevant params.
+  // Used to detect genuine changes vs. no-op re-renders (e.g., paging through
+  // client-side-filtered results should not trigger a redundant server fetch).
+  const prevFetchParamsRef = useRef({
+    region: '',
+    isMobile: false,
+    refreshTrigger: 0,
+    hasClientSide: false,
+  });
+
+  // Fetch events with server-side pagination by default.
+  // When client-side filters are active (keyword or date range), we fetch all events
+  // in one call (limit=FULL_FETCH_LIMIT) and paginate client-side via paginatedEvents.
+  // When no user date filter is active, we pass endDateFrom (today) to the server
+  // so the backend filters out past events server-side.
   useEffect(() => {
     let cancelled = false;
-    const isLoadMore = isMobile && mobilePage > 1;
+
+    const hasClientSide = searchFilters.keyword || searchFilters.startDateFrom || searchFilters.startDateTo;
+    // When client-side filters are active, bypass mobile Load More accumulation —
+    // the full fetch already returns all events on page 1.
+    const isLoadMore = isMobile && mobilePage > 1 && !hasClientSide;
+
+    // Compare current fetch-relevant params against previous values.
+    // This catches both genuine changes AND no-op object reference changes
+    // (e.g., handleSearch called with the same filter values).
+    const prev = prevFetchParamsRef.current;
+    const fetchParamsChanged =
+      prev.region !== searchFilters.region ||
+      prev.isMobile !== isMobile ||
+      prev.refreshTrigger !== refreshTrigger ||
+      prev.hasClientSide !== hasClientSide;
+
+    // If nothing that matters for the server query changed, and we're in
+    // client-side mode, skip the fetch. The data is already in `events` state.
+    if (!fetchParamsChanged && hasClientSide) {
+      // Ensure loading is false (may have been set by a previous effect cleanup)
+      setEventsLoading(false);
+      return;
+    }
+
+    // Update the ref for next comparison
+    prevFetchParamsRef.current = {
+      region: searchFilters.region,
+      isMobile,
+      refreshTrigger,
+      hasClientSide,
+    };
 
     async function loadEvents() {
       // Only show full-page spinner on initial load or desktop page change, not on mobile Load More
@@ -95,31 +137,35 @@ const Events = () => {
       }
       setEventsError(null);
       try {
-        const page = isMobile ? mobilePage : currentPage;
-        // Fetch +1 extra to account for the featured event being removed from the grid
+        // When client-side filters are active, fetch all events in one call (page=1, limit=FULL_FETCH_LIMIT).
+        // Otherwise, use normal server-side pagination (page=N, limit=GRID_PAGE_SIZE+1).
+        const page = hasClientSide ? 1 : (isMobile ? mobilePage : currentPage);
         const params = {
           page,
-          limit: GRID_PAGE_SIZE + 1,
+          limit: hasClientSide ? FULL_FETCH_LIMIT : GRID_PAGE_SIZE + 1,
         };
 
-        // Add search filters if present (user-initiated date filters still passed through)
+        // Add search filters if present (date filters are applied client-side — see dateFilteredEvents)
         if (searchFilters.region) params.region = searchFilters.region;
-        if (searchFilters.startDateFrom) params.startDateFrom = searchFilters.startDateFrom;
-        if (searchFilters.startDateTo) params.startDateTo = searchFilters.startDateTo;
+
+        // Always send endDateFrom (today) to exclude fully-past events server-side.
+        // This correctly handles multi-month events (April–December) because
+        // endDateFrom checks endDate >= today, not startDate >= today.
+        params.endDateFrom = new Date().toLocaleDateString('en-CA');
 
         const data = await getEvents(params);
 
         if (!cancelled) {
           const rawEvents = data.events || [];
           const normalized = rawEvents.map(normalizeEvent);
-          // Filter upcoming client-side — correctly handles multi-month events
-          // (events with startDate in the past but endDate in the future)
-          const upcoming = normalized.filter(isEventUpcoming);
+          // Server already filtered by endDateFrom, so no client-side
+          // isEventUpcoming filter is needed.
+          const filtered = normalized;
           // Mobile Load More: accumulate events; Desktop/initial: replace
           if (isLoadMore) {
-            setEvents((prev) => [...prev, ...upcoming]);
+            setEvents((prev) => [...prev, ...filtered]);
           } else {
-            setEvents(upcoming);
+            setEvents(filtered);
           }
           setApiTotalPages(data.totalPages || 1);
         }
@@ -135,7 +181,7 @@ const Events = () => {
 
     loadEvents();
     return () => { cancelled = true; };
-  }, [currentPage, mobilePage, searchFilters, refreshTrigger, isMobile]);
+  }, [currentPage, mobilePage, searchFilters.region, searchFilters.keyword, searchFilters.startDateFrom, searchFilters.startDateTo, refreshTrigger, isMobile]);
 
   // Handle search from SearchBar
   const handleSearch = useCallback((filters) => {
@@ -158,13 +204,48 @@ const Events = () => {
   // Check if any search filter is active
   const hasActiveFilters = searchFilters.region || searchFilters.startDateFrom || searchFilters.startDateTo || searchFilters.keyword;
 
-  // Grid events: filter out featured from current page events
-  // Skip dedup when filters are active — the featured event was fetched without filters
-  // and may be the only matching result in the filtered grid
+  // Client-side-only filters (keyword and date range) require a full fetch because
+  // the API does not support keyword search and date filters are applied client-side.
+  // Region is excluded — it is sent to the API and filtered server-side.
+  const hasClientSideFilters = useMemo(
+    () => searchFilters.keyword || searchFilters.startDateFrom || searchFilters.startDateTo,
+    [searchFilters.keyword, searchFilters.startDateFrom, searchFilters.startDateTo],
+  );
+
+  // Determine if the featured event matches all active filters.
+  // Used both for deciding whether to show the FeaturedEvent card AND
+  // whether to deduplicate it from the grid.
+  const featuredMatchesFilters = useMemo(() => {
+    if (!featuredEvent || featuredLoading) return false;
+    if (!hasActiveFilters) return true;
+
+    // Check date range overlap
+    if (searchFilters.startDateFrom || searchFilters.startDateTo) {
+      if (!isEventInDateRange(featuredEvent, searchFilters.startDateFrom, searchFilters.startDateTo)) return false;
+    }
+    // Check region: case-insensitive substring match on rawRegion
+    if (searchFilters.region) {
+      const featRegion = (featuredEvent.rawRegion || '').toLowerCase();
+      const filterRegion = searchFilters.region.toLowerCase();
+      if (!featRegion.includes(filterRegion)) return false;
+    }
+    // Check keyword: case-insensitive match on title
+    if (searchFilters.keyword) {
+      const kw = searchFilters.keyword.toLowerCase();
+      if (!(featuredEvent.title || '').toLowerCase().includes(kw)) return false;
+    }
+    return true;
+  }, [featuredEvent, featuredLoading, hasActiveFilters, searchFilters.startDateFrom, searchFilters.startDateTo, searchFilters.region, searchFilters.keyword]);
+
+  // Grid events: filter out featured from current page events.
+  // Only skip dedup when the featured event does NOT match active filters
+  // (it was fetched without filters, so it may be the only matching result).
+  // When the featured event DOES match filters, dedup to avoid double-display.
   const gridEvents = useMemo(() => {
-    if (!featuredEvent || hasActiveFilters) return events;
+    if (!featuredEvent) return events;
+    if (!featuredMatchesFilters) return events; // featured doesn't match filters — keep it in grid
     return events.filter((e) => e.id !== featuredEvent.id);
-  }, [events, featuredEvent, hasActiveFilters]);
+  }, [events, featuredEvent, featuredMatchesFilters]);
 
   // Client-side keyword filter over grid events
   const keywordFilteredEvents = useMemo(() => {
@@ -178,8 +259,45 @@ const Events = () => {
     );
   }, [gridEvents, searchFilters.keyword]);
 
-  const isEmpty = !eventsLoading && !eventsError && keywordFilteredEvents.length === 0 && currentPage === 1 && mobilePage === 1;
-  const hasMoreMobile = isMobile && mobilePage < apiTotalPages;
+  // Client-side date-range filter over keyword-filtered events
+  // Uses isEventInDateRange() to correctly handle multi-month events whose
+  // startDate may be before the filter window but whose endDate is within it.
+  const dateFilteredEvents = useMemo(() => {
+    if (!searchFilters.startDateFrom && !searchFilters.startDateTo) return keywordFilteredEvents;
+    return keywordFilteredEvents.filter((event) =>
+      isEventInDateRange(event, searchFilters.startDateFrom, searchFilters.startDateTo),
+    );
+  }, [keywordFilteredEvents, searchFilters.startDateFrom, searchFilters.startDateTo]);
+
+  // Effective total pages: when client-side filters are active, compute from the
+  // filtered array length (client-side pagination); otherwise use the API's totalPages.
+  const displayTotalPages = useMemo(() => {
+    if (hasClientSideFilters) {
+      return Math.max(1, Math.ceil(dateFilteredEvents.length / GRID_PAGE_SIZE));
+    }
+    return apiTotalPages;
+  }, [hasClientSideFilters, dateFilteredEvents.length, apiTotalPages]);
+
+  // Final paginated slice for rendering.
+  // When client-side filters are active, slice the full filtered array for the current page.
+  // Otherwise, dateFilteredEvents already contains exactly one page from the API.
+  const paginatedEvents = useMemo(() => {
+    if (!hasClientSideFilters) {
+      return dateFilteredEvents;
+    }
+    if (isMobile) {
+      // Mobile: accumulate — show events 0 through mobilePage * GRID_PAGE_SIZE.
+      // This mirrors the server-side accumulation pattern (isLoadMore → [...prev, ...filtered])
+      // but operates on the already-fetched dateFilteredEvents array.
+      return dateFilteredEvents.slice(0, mobilePage * GRID_PAGE_SIZE);
+    }
+    // Desktop: show one page at a time
+    const startIndex = (currentPage - 1) * GRID_PAGE_SIZE;
+    return dateFilteredEvents.slice(startIndex, startIndex + GRID_PAGE_SIZE);
+  }, [hasClientSideFilters, dateFilteredEvents, currentPage, mobilePage, isMobile]);
+
+  const isEmpty = !eventsLoading && !eventsError && paginatedEvents.length === 0 && currentPage === 1 && mobilePage === 1;
+  const hasMoreMobile = isMobile && mobilePage < displayTotalPages;
 
 
   return (
@@ -221,34 +339,7 @@ const Events = () => {
             {/* Featured Event — with fallback when no featured event exists
                 or when the featured event doesn't match the active date filter */}
             {(() => {
-              // Determine if featured event should be shown — validate against ALL active filters
-              const showFeatured = (() => {
-                if (!featuredEvent || featuredLoading) return false;
-                if (!hasActiveFilters) return true;
-
-                // Check startDateFrom: featured startDate must be >= filter startDateFrom
-                if (searchFilters.startDateFrom) {
-                  if (new Date(featuredEvent.startDate) < new Date(searchFilters.startDateFrom)) return false;
-                }
-                // Check startDateTo: featured startDate must be <= filter startDateTo
-                if (searchFilters.startDateTo) {
-                  if (new Date(featuredEvent.startDate) > new Date(searchFilters.startDateTo)) return false;
-                }
-                // Check region: case-insensitive substring match on rawRegion
-                if (searchFilters.region) {
-                  const featRegion = (featuredEvent.rawRegion || '').toLowerCase();
-                  const filterRegion = searchFilters.region.toLowerCase();
-                  if (!featRegion.includes(filterRegion)) return false;
-                }
-                // Check keyword: case-insensitive match on title
-                if (searchFilters.keyword) {
-                  const kw = searchFilters.keyword.toLowerCase();
-                  if (!(featuredEvent.title || '').toLowerCase().includes(kw)) return false;
-                }
-                return true;
-              })();
-
-              if (showFeatured) {
+              if (featuredMatchesFilters) {
                 return <FeaturedEvent event={featuredEvent} />;
               }
 
@@ -293,7 +384,7 @@ const Events = () => {
                   <div
                     className="grid grid-cols-2 lg:grid-cols-4 gap-x-[16px] md:gap-x-[10px] gap-y-[34px]"
                   >
-                    {keywordFilteredEvents.map((event, index) => (
+                    {paginatedEvents.map((event, index) => (
                       <EventCard
                         key={event.id}
                         event={event}
@@ -328,10 +419,10 @@ const Events = () => {
                       </div>
                     )
                   ) : (
-                    apiTotalPages > 1 && (
+                    displayTotalPages > 1 && (
                       <EventPagination
                         currentPage={currentPage}
-                        totalPages={apiTotalPages}
+                        totalPages={displayTotalPages}
                         onPageChange={handlePageChange}
                       />
                     )
