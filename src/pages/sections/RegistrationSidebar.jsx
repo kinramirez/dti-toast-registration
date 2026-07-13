@@ -57,7 +57,7 @@ export default function RegistrationSidebar({ showWhyRegister = true }) {
           Reminder
         </h3>
         <p className='text-[16px] text-brand-dark leading-relaxed mb-4'>
-          Free Entrance for those who register now until August 8-9, 2026, 5PM.
+          Free Entrance for those who register now until July 29, 2026, 5PM.
           Submission of this form confirms that you agree to receive updates 
           about Toast Wedding Fair! If you receive the form auto reply, it means 
           we have received your form and you are guaranteed
