@@ -70,8 +70,8 @@ const FeaturedEvent = ({ event }) => {
 
   // Format time range
   const formatTimeRange = () => {
-    const startTime = formatTime(event.event_start_time) || '11:00 AM';
-    const endTime = formatTime(event.event_end_time) || '08:00 PM';
+    const startTime = formatTime(event.event_start_time) || 'TBA';
+    const endTime = formatTime(event.event_end_time) || 'TBA';
     return {
       range: `${startTime} - ${endTime}`,
       label: 'Both Days',
@@ -192,7 +192,7 @@ const FeaturedEvent = ({ event }) => {
               <SquareUser className="w-14 h-14 text-[#AF5456] shrink-0 mt-0.5 border rounded-full p-2" strokeWidth={1.1} />
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#121212] font-satoshi">
-                  200+
+                  {event?.exhibitors != null ? `${event.exhibitors}+` : '—'}
                 </span>
                 <p className="text-sm text-[#737373] font-satoshi leading-relaxed">
                   Exhibitors
@@ -205,7 +205,9 @@ const FeaturedEvent = ({ event }) => {
               <UsersRound className="w-14 h-14 text-[#AF5456] shrink-0 mt-0.5 border rounded-full p-2" strokeWidth={1.1} />
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#121212] font-satoshi">
-                  10,000
+                  {event?.noOfParticipants != null
+                    ? event.noOfParticipants.toLocaleString()
+                    : '—'}
                 </span>
                 <p className="text-sm text-[#737373] font-satoshi leading-relaxed">
                   Expected Guests
@@ -218,7 +220,9 @@ const FeaturedEvent = ({ event }) => {
               <Calendar className="w-14 h-14 text-[#AF5456] shrink-0 mt-0.5 border rounded-full p-2" strokeWidth={1.1} />
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#121212] font-satoshi">
-                  3
+                  {event?.daysOfInspiration != null
+                    ? event.daysOfInspiration
+                    : '—'}
                 </span>
                 <p className="text-sm text-[#737373] font-satoshi leading-relaxed">
                   Days of Inspiration

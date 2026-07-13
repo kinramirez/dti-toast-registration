@@ -94,8 +94,8 @@ const Events = () => {
   // Fetch events with server-side pagination by default.
   // When client-side filters are active (keyword or date range), we fetch all events
   // in one call (limit=FULL_FETCH_LIMIT) and paginate client-side via paginatedEvents.
-  // Date filters are never sent to the server because the API only checks startDate,
-  // which excludes multi-month events whose startDate is in the past but endDate is in the future.
+  // When no user date filter is active, we pass endDateFrom (today) to the server
+  // so the backend filters out past events server-side.
   useEffect(() => {
     let cancelled = false;
 
@@ -148,18 +148,19 @@ const Events = () => {
         // Add search filters if present (date filters are applied client-side — see dateFilteredEvents)
         if (searchFilters.region) params.region = searchFilters.region;
 
+        // Always send endDateFrom (today) to exclude fully-past events server-side.
+        // This correctly handles multi-month events (April–December) because
+        // endDateFrom checks endDate >= today, not startDate >= today.
+        params.endDateFrom = new Date().toLocaleDateString('en-CA');
+
         const data = await getEvents(params);
 
         if (!cancelled) {
           const rawEvents = data.events || [];
           const normalized = rawEvents.map(normalizeEvent);
-          // Determine whether to apply the upcoming-only filter.
-          // When the user has applied date filters, bypass isEventUpcoming so they can
-          // search the full event directory (including past events) within their chosen range.
-          const hasDateFilter = searchFilters.startDateFrom || searchFilters.startDateTo;
-          const filtered = hasDateFilter
-            ? normalized
-            : normalized.filter(isEventUpcoming);
+          // Server already filtered by endDateFrom, so no client-side
+          // isEventUpcoming filter is needed.
+          const filtered = normalized;
           // Mobile Load More: accumulate events; Desktop/initial: replace
           if (isLoadMore) {
             setEvents((prev) => [...prev, ...filtered]);
@@ -211,13 +212,40 @@ const Events = () => {
     [searchFilters.keyword, searchFilters.startDateFrom, searchFilters.startDateTo],
   );
 
-  // Grid events: filter out featured from current page events
-  // Skip dedup when filters are active — the featured event was fetched without filters
-  // and may be the only matching result in the filtered grid
+  // Determine if the featured event matches all active filters.
+  // Used both for deciding whether to show the FeaturedEvent card AND
+  // whether to deduplicate it from the grid.
+  const featuredMatchesFilters = useMemo(() => {
+    if (!featuredEvent || featuredLoading) return false;
+    if (!hasActiveFilters) return true;
+
+    // Check date range overlap
+    if (searchFilters.startDateFrom || searchFilters.startDateTo) {
+      if (!isEventInDateRange(featuredEvent, searchFilters.startDateFrom, searchFilters.startDateTo)) return false;
+    }
+    // Check region: case-insensitive substring match on rawRegion
+    if (searchFilters.region) {
+      const featRegion = (featuredEvent.rawRegion || '').toLowerCase();
+      const filterRegion = searchFilters.region.toLowerCase();
+      if (!featRegion.includes(filterRegion)) return false;
+    }
+    // Check keyword: case-insensitive match on title
+    if (searchFilters.keyword) {
+      const kw = searchFilters.keyword.toLowerCase();
+      if (!(featuredEvent.title || '').toLowerCase().includes(kw)) return false;
+    }
+    return true;
+  }, [featuredEvent, featuredLoading, hasActiveFilters, searchFilters.startDateFrom, searchFilters.startDateTo, searchFilters.region, searchFilters.keyword]);
+
+  // Grid events: filter out featured from current page events.
+  // Only skip dedup when the featured event does NOT match active filters
+  // (it was fetched without filters, so it may be the only matching result).
+  // When the featured event DOES match filters, dedup to avoid double-display.
   const gridEvents = useMemo(() => {
-    if (!featuredEvent || hasActiveFilters) return events;
+    if (!featuredEvent) return events;
+    if (!featuredMatchesFilters) return events; // featured doesn't match filters — keep it in grid
     return events.filter((e) => e.id !== featuredEvent.id);
-  }, [events, featuredEvent, hasActiveFilters]);
+  }, [events, featuredEvent, featuredMatchesFilters]);
 
   // Client-side keyword filter over grid events
   const keywordFilteredEvents = useMemo(() => {
@@ -311,31 +339,7 @@ const Events = () => {
             {/* Featured Event — with fallback when no featured event exists
                 or when the featured event doesn't match the active date filter */}
             {(() => {
-              // Determine if featured event should be shown — validate against ALL active filters
-              const showFeatured = (() => {
-                if (!featuredEvent || featuredLoading) return false;
-                if (!hasActiveFilters) return true;
-
-                // Check date range overlap (not just startDate) — correctly handles
-                // multi-month events whose startDate is before the filter but endDate is within it
-                if (searchFilters.startDateFrom || searchFilters.startDateTo) {
-                  if (!isEventInDateRange(featuredEvent, searchFilters.startDateFrom, searchFilters.startDateTo)) return false;
-                }
-                // Check region: case-insensitive substring match on rawRegion
-                if (searchFilters.region) {
-                  const featRegion = (featuredEvent.rawRegion || '').toLowerCase();
-                  const filterRegion = searchFilters.region.toLowerCase();
-                  if (!featRegion.includes(filterRegion)) return false;
-                }
-                // Check keyword: case-insensitive match on title
-                if (searchFilters.keyword) {
-                  const kw = searchFilters.keyword.toLowerCase();
-                  if (!(featuredEvent.title || '').toLowerCase().includes(kw)) return false;
-                }
-                return true;
-              })();
-
-              if (showFeatured) {
+              if (featuredMatchesFilters) {
                 return <FeaturedEvent event={featuredEvent} />;
               }
 
