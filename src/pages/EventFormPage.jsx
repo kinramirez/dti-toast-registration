@@ -1,9 +1,10 @@
 import { useMemo, useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { usePhilippineAddress } from '../hooks/usePhilippineAddress';
 import { registerEvent } from '../api/registration';
+import { getEventById } from '../api/events';
 
 import { initialForm, registrationSchema } from './EventFormPage.schema';
 import { stepTransition, buildPayload } from './EventFormPage.utils';
@@ -24,8 +25,85 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
 
   const location = useLocation();
   const navigate = useNavigate();
-  const event = location.state?.event ?? propEvent;
-  const eventGuId = event?.guid ?? event?.id ?? event?.eventGuId ?? event?.guId;
+  const { id } = useParams();
+
+  // ── GUID Validation ──
+  // Only the Toast Wedding Fair is registrable.
+  const ALLOWED_GUID = '35e60ba5-5153-468b-853c-e22abc9521a7';
+
+  // If no :id param (old /event/register route), show error.
+  if (id === undefined) {
+    return (
+      <div className="relative z-10 bg-white min-h-screen flex items-center justify-center">
+        <div className="text-center px-6 py-16 max-w-md">
+          <h2 className="text-2xl font-bold text-[#5D5D5D] mb-3 font-satoshi">
+            No Event Specified
+          </h2>
+          <p className="text-[#737373] text-sm leading-relaxed font-satoshi mb-6">
+            Please use a valid registration link to access this page.
+          </p>
+          <button
+            onClick={() => navigate('/event', { replace: true })}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200"
+            style={{
+              background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
+              textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
+            }}
+          >
+            Browse Events
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // If :id does not match the allowed GUID, show error.
+  if (id !== ALLOWED_GUID) {
+    return (
+      <div className="relative z-10 bg-white min-h-screen flex items-center justify-center">
+        <div className="text-center px-6 py-16 max-w-md">
+          <h2 className="text-2xl font-bold text-[#5D5D5D] mb-3 font-satoshi">
+            Invalid Event Link
+          </h2>
+          <p className="text-[#737373] text-sm leading-relaxed font-satoshi mb-6">
+            This registration link is not valid. Please use the correct link
+            provided for the event.
+          </p>
+          <button
+            onClick={() => navigate('/event', { replace: true })}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200"
+            style={{
+              background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
+              textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
+            }}
+          >
+            Browse Events
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Fetch event by ID when location.state is missing (direct URL / bookmark / refresh)
+  const [fetchedEvent, setFetchedEvent] = useState(null);
+
+  useEffect(() => {
+    if (location.state?.event || !id) return;
+
+    let cancelled = false;
+    getEventById(id)
+      .then((ev) => {
+        if (!cancelled) setFetchedEvent(ev);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch event for registration success:', err);
+      });
+
+    return () => { cancelled = true; };
+  }, [id, location.state?.event]);
+
+  const event = location.state?.event ?? fetchedEvent ?? propEvent;
+  const eventGuId = id ?? event?.guid ?? event?.id ?? event?.eventGuId ?? event?.guId;
   const {
     regionCode,
     setRegionCode,
@@ -263,7 +341,7 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
   return (
     <div className='relative z-10 bg-white'>
       {/* ── Hero Band (Steps 1 & 2 only; Step 3 has its own hero) ── */}
-      {(step === 1 || step === 2) && <RegistrationHero eventId={eventGuId} hideBackLink={hideBackLink} />}
+      {(step === 1 || step === 2) && <RegistrationHero eventId={eventGuId} hideBackLink={true} />}
 
       {/* ── Steps 1 & 2: Two-Column Layout ── */}
       {(step === 1 || step === 2) && (
@@ -347,7 +425,8 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
               userEmail={form.email}
               event={event}
               onBackToHome={handleBackToHome}
-              hideViewEventButton={hideViewEventButton}
+              hideViewEventButton={true}
+              hideContactLink={true}
             />
           </motion.div>
         </AnimatePresence>

@@ -9,7 +9,6 @@ import ContactUs from './pages/ContactUs'
 import EventFormPage from './pages/EventFormPage'
 import EventPage from './pages/EventPage'
 import EventDetailsPage from './pages/EventDetailsPage'
-import TemporaryLanding from './pages/TemporaryLanding'
 
 function ScrollBehavior() {
   const { pathname, hash } = useLocation()
@@ -31,7 +30,7 @@ function ScrollBehavior() {
 function AppFrame() {
   const location = useLocation()
   const isEventPage = location.pathname.startsWith('/event') || location.pathname === '/contact'
-  const isEventRegisterPage = location.pathname === '/event/register' || location.pathname === '/'
+  const isEventRegisterPage = location.pathname.startsWith('/event/register')
   const isEventDetailsPage = /^\/event\/[^/]+$/.test(location.pathname) && !isEventRegisterPage
   const isContactPage = location.pathname === '/contact'
 
@@ -58,11 +57,12 @@ function AppFrame() {
       <ScrollBehavior />
       <main className="appMain">
         <Routes>
-          <Route path="/" element={<TemporaryLanding />} />
+          <Route path="/" element={<Navigate to="/event/register/35e60ba5-5153-468b-853c-e22abc9521a7" replace />} />
           <Route path="/event/register" element={<EventFormPage />} />
+          <Route path="/event/register/:id" element={<EventFormPage />} />
           <Route path="/event/:id" element={<EventDetailsPage />} />
           <Route path="/contact" element={<ContactUs />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/event/register/35e60ba5-5153-468b-853c-e22abc9521a7" replace />} />
         </Routes>
       </main>
       {!isEventRegisterPage && <Footer />}
