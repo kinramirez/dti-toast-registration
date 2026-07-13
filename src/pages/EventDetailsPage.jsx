@@ -279,7 +279,7 @@ const EventDetailsPage = () => {
 
               {/* Script Tagline */}
               <p className="font-corinthia text-[48px] sm:text-[64px] md:text-[80px] lg:text-[96px] leading-[1.2] lg:leading-[115px] text-[#C55F61]">
-                Your forever begins here
+                {event?.tagline || 'Your forever begins here'}
               </p>
 
               {/* Description */}
@@ -383,7 +383,7 @@ const EventDetailsPage = () => {
       {/* ============================================
           WHAT TO EXPECT
           ============================================ */}
-      <WhatToExpect />
+      <WhatToExpect event={event} />
 
       {/* ============================================
           VENUE SECTION
