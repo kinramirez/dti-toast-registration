@@ -69,7 +69,7 @@ const EventDetailsPage = () => {
 
   const handleRegister = () => {
     if (event) {
-      navigate('/event/register', { state: { event } });
+      navigate(`/event/register/${event.guid || event.id}`, { state: { event } });
     }
   };
 
