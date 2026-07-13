@@ -194,25 +194,55 @@ export const isEventInDateRange = (event, startDateFrom, startDateTo) => {
   // If no date filters are active, the event passes
   if (!startDateFrom && !startDateTo) return true;
 
-  // Determine the event's date range
-  const eventStart = new Date(event.startDate);
+  // Helper: parse a date string safely.
+  // - Date-only strings (YYYY-MM-DD) are parsed as local midnight to avoid
+  //   UTC-midnight interpretation (new Date("2026-07-15") → UTC midnight,
+  //   which in UTC+8 shifts to 8:00 AM local).
+  // - ISO 8601 timestamps are parsed via standard new Date().
+  // - Returns null for invalid / falsy inputs.
+  const parseDateLocal = (dateString) => {
+    if (!dateString) return null;
+    // Date-only string: YYYY-MM-DD (no time component)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      const [year, month, day] = dateString.split('-').map(Number);
+      return new Date(year, month - 1, day); // local midnight
+    }
+    // ISO 8601 timestamp or other format — standard parsing
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  // --- Parse event dates with validation ---
+
+  const eventStart = parseDateLocal(event.startDate);
+  if (eventStart === null) return false; // invalid event start date → exclude
   eventStart.setHours(0, 0, 0, 0); // normalize to start of day
 
-  const eventEnd = event.endDate
-    ? new Date(event.endDate)
-    : eventStart; // single-day event fallback
+  let eventEnd;
+  if (event.endDate) {
+    eventEnd = parseDateLocal(event.endDate);
+    if (eventEnd === null) return false; // invalid event end date → exclude
+  } else {
+    // CRITICAL: new Date(existingDate) creates a COPY, not a shared reference.
+    // This prevents eventEnd.setHours() from mutating eventStart.
+    eventEnd = new Date(eventStart);
+  }
   eventEnd.setHours(23, 59, 59, 999); // normalize to end of day
 
-  // Check lower bound: the event must not end before the filter starts
+  // --- Check lower bound: event must not end before filter starts ---
+
   if (startDateFrom) {
-    const filterStart = new Date(startDateFrom);
+    const filterStart = parseDateLocal(startDateFrom);
+    if (filterStart === null) return true; // invalid filter → don't exclude (graceful)
     filterStart.setHours(0, 0, 0, 0);
     if (eventEnd < filterStart) return false;
   }
 
-  // Check upper bound: the event must not start after the filter ends
+  // --- Check upper bound: event must not start after filter ends ---
+
   if (startDateTo) {
-    const filterEnd = new Date(startDateTo);
+    const filterEnd = parseDateLocal(startDateTo);
+    if (filterEnd === null) return true; // invalid filter → don't exclude (graceful)
     filterEnd.setHours(23, 59, 59, 999);
     if (eventStart > filterEnd) return false;
   }

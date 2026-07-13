@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { getEvents } from '@/api/events';
 import { normalizeEvent, isEventUpcoming, isEventInDateRange } from '@/lib/utils/eventUtils';
 import HeroSection from '@/features/events/components/HeroSection';
@@ -81,6 +81,16 @@ const Events = () => {
     return () => { cancelled = true; };
   }, [refreshTrigger]);
 
+  // Ref to track the previous values of fetch-relevant params.
+  // Used to detect genuine changes vs. no-op re-renders (e.g., paging through
+  // client-side-filtered results should not trigger a redundant server fetch).
+  const prevFetchParamsRef = useRef({
+    region: '',
+    isMobile: false,
+    refreshTrigger: 0,
+    hasClientSide: false,
+  });
+
   // Fetch events with server-side pagination by default.
   // When client-side filters are active (keyword or date range), we fetch all events
   // in one call (limit=FULL_FETCH_LIMIT) and paginate client-side via paginatedEvents.
@@ -88,9 +98,37 @@ const Events = () => {
   // which excludes multi-month events whose startDate is in the past but endDate is in the future.
   useEffect(() => {
     let cancelled = false;
+
+    const hasClientSide = searchFilters.keyword || searchFilters.startDateFrom || searchFilters.startDateTo;
     // When client-side filters are active, bypass mobile Load More accumulation —
     // the full fetch already returns all events on page 1.
-    const isLoadMore = isMobile && mobilePage > 1 && !hasClientSideFilters;
+    const isLoadMore = isMobile && mobilePage > 1 && !hasClientSide;
+
+    // Compare current fetch-relevant params against previous values.
+    // This catches both genuine changes AND no-op object reference changes
+    // (e.g., handleSearch called with the same filter values).
+    const prev = prevFetchParamsRef.current;
+    const fetchParamsChanged =
+      prev.region !== searchFilters.region ||
+      prev.isMobile !== isMobile ||
+      prev.refreshTrigger !== refreshTrigger ||
+      prev.hasClientSide !== hasClientSide;
+
+    // If nothing that matters for the server query changed, and we're in
+    // client-side mode, skip the fetch. The data is already in `events` state.
+    if (!fetchParamsChanged && hasClientSide) {
+      // Ensure loading is false (may have been set by a previous effect cleanup)
+      setEventsLoading(false);
+      return;
+    }
+
+    // Update the ref for next comparison
+    prevFetchParamsRef.current = {
+      region: searchFilters.region,
+      isMobile,
+      refreshTrigger,
+      hasClientSide,
+    };
 
     async function loadEvents() {
       // Only show full-page spinner on initial load or desktop page change, not on mobile Load More
@@ -101,10 +139,10 @@ const Events = () => {
       try {
         // When client-side filters are active, fetch all events in one call (page=1, limit=FULL_FETCH_LIMIT).
         // Otherwise, use normal server-side pagination (page=N, limit=GRID_PAGE_SIZE+1).
-        const page = hasClientSideFilters ? 1 : (isMobile ? mobilePage : currentPage);
+        const page = hasClientSide ? 1 : (isMobile ? mobilePage : currentPage);
         const params = {
           page,
-          limit: hasClientSideFilters ? FULL_FETCH_LIMIT : GRID_PAGE_SIZE + 1,
+          limit: hasClientSide ? FULL_FETCH_LIMIT : GRID_PAGE_SIZE + 1,
         };
 
         // Add search filters if present (date filters are applied client-side — see dateFilteredEvents)
@@ -142,7 +180,7 @@ const Events = () => {
 
     loadEvents();
     return () => { cancelled = true; };
-  }, [currentPage, mobilePage, searchFilters, refreshTrigger, isMobile]);
+  }, [currentPage, mobilePage, searchFilters.region, searchFilters.keyword, searchFilters.startDateFrom, searchFilters.startDateTo, refreshTrigger, isMobile]);
 
   // Handle search from SearchBar
   const handleSearch = useCallback((filters) => {
@@ -219,8 +257,14 @@ const Events = () => {
     if (!hasClientSideFilters) {
       return dateFilteredEvents;
     }
-    const page = isMobile ? mobilePage : currentPage;
-    const startIndex = (page - 1) * GRID_PAGE_SIZE;
+    if (isMobile) {
+      // Mobile: accumulate — show events 0 through mobilePage * GRID_PAGE_SIZE.
+      // This mirrors the server-side accumulation pattern (isLoadMore → [...prev, ...filtered])
+      // but operates on the already-fetched dateFilteredEvents array.
+      return dateFilteredEvents.slice(0, mobilePage * GRID_PAGE_SIZE);
+    }
+    // Desktop: show one page at a time
+    const startIndex = (currentPage - 1) * GRID_PAGE_SIZE;
     return dateFilteredEvents.slice(startIndex, startIndex + GRID_PAGE_SIZE);
   }, [hasClientSideFilters, dateFilteredEvents, currentPage, mobilePage, isMobile]);
 
