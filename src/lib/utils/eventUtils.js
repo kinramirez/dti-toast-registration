@@ -98,7 +98,6 @@ const EVENT_FALLBACKS = {
   description: 'More information about this event is coming soon. Please check back later!',
   startDate: 'Date To Be Announced',
   endDate: 'Date To Be Announced',
-  noOfParticipants: 0,
   location: 'Venue To Be Announced',
   region: 'Region not specified',
   isFeatured: false,
@@ -110,8 +109,6 @@ const EVENT_FALLBACKS = {
   longitude: 0.0,
   venuePhoto: [],
   highlights: ['Event highlights will be announced shortly.'],
-  exhibitors: 0,
-  daysOfInspiration: 0,
   whatToExpect: [
     {
       title: 'Schedule in Progress',
@@ -135,7 +132,13 @@ const applyFallbacks = (event) => {
       current === '' ||
       (Array.isArray(current) && current.length === 0)
     ) {
-      result[field] = fallback;
+      if (Array.isArray(fallback)) {
+        result[field] = [...fallback];
+      } else if (typeof fallback === 'object' && fallback !== null) {
+        result[field] = { ...fallback };
+      } else {
+        result[field] = fallback;
+      }
     }
   }
   return result;
