@@ -45,7 +45,7 @@ const EventDetailsPage = () => {
     getEventById(id)
       .then((ev) => {
         if (!cancelled) {
-          setFetchedEvent(ev);
+          setFetchedEvent(normalizeEvent(ev));
           setIsLoading(false);
         }
       })
