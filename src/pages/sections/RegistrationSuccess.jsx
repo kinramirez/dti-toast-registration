@@ -258,7 +258,7 @@ function RegisteredEventCard({ event }) {
 
   // Location
   const locationName = event.location || '';
-  const cityName = event.city || event.rawRegion || '';
+  const cityName = event.city || event.venueAddress || '';
 
   const isFeatured = event.featured || event.isFeatured;
 
