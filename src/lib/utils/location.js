@@ -4,6 +4,15 @@ export const REGIONS = {
 };
 
 export const getRegionFromCoords = async (lat, lng) => {
+  // Guard against near-zero (Null Island) coordinates from fallback values
+  if (
+    lat == null ||
+    lng == null ||
+    (Math.abs(lat) < 0.01 && Math.abs(lng) < 0.01)
+  ) {
+    return REGIONS.MANILA; // default to Manila when coordinates are invalid
+  }
+
   const res = await fetch(
     `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
     { headers: { 'Accept-Language': 'en' } }
