@@ -1,9 +1,10 @@
 import { useMemo, useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { usePhilippineAddress } from '../hooks/usePhilippineAddress';
 import { registerEvent } from '../api/registration';
+import { getEventById } from '../api/events';
 
 import { initialForm, registrationSchema } from './EventFormPage.schema';
 import { stepTransition, buildPayload } from './EventFormPage.utils';
@@ -24,8 +25,42 @@ export default function EventFormPage() {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const event = location.state?.event;
-  const eventGuId = event?.guid ?? event?.id ?? event?.eventGuId ?? event?.guId;
+  const { eventGuid } = useParams();
+
+  // Event from navigation state (backward-compatible fallback)
+  const stateEvent = location.state?.event;
+
+  // Fetch event on direct URL visit when navigation state is absent
+  const [fetchedEvent, setFetchedEvent] = useState(null);
+  const [eventLoading, setEventLoading] = useState(false);
+
+  useEffect(() => {
+    if (stateEvent || !eventGuid) return;
+
+    let cancelled = false;
+    setEventLoading(true);
+
+    getEventById(eventGuid)
+      .then((ev) => {
+        if (!cancelled) {
+          setFetchedEvent(ev);
+          setEventLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFetchedEvent(null);
+          setEventLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [eventGuid, stateEvent]);
+
+  const event = stateEvent || fetchedEvent;
+  const eventGuId = event?.guid ?? event?.id ?? event?.eventGuId ?? event?.guId ?? eventGuid;
   const {
     regionCode,
     setRegionCode,
@@ -257,7 +292,21 @@ export default function EventFormPage() {
     setRegionCode('');
     setCityCode('');
     setBarangayCode('');
-    navigate('/event', { replace: true });
+    navigate('/', { replace: true });
+  }
+
+  // Loading state while fetching event on direct URL visit
+  if (eventLoading) {
+    return (
+      <section className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center justify-center py-32 text-center">
+          <div className="w-8 h-8 rounded-full border-4 border-[rgba(197,95,97,0.2)] border-t-[#C55F61] animate-spin mb-4" />
+          <p className="text-[#737373] text-sm font-satoshi">
+            Loading event…
+          </p>
+        </div>
+      </section>
+    );
   }
 
   return (

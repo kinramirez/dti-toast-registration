@@ -7,7 +7,7 @@ const CtaBanner = ({ event }) => {
 
   const handleRegister = () => {
     if (event) {
-      navigate('/event/register', { state: { event } });
+      navigate(`/event/${event.id}/register`, { state: { event } });
     }
   };
 
