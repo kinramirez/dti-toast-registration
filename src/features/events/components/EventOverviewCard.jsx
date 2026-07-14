@@ -49,7 +49,7 @@ const EventOverviewCard = ({ event }) => {
       : startDay || '';
 
   const timeRangeLabel =
-    startTimeFormatted && endTimeFormatted
+    startTimeFormatted && endTimeFormatted && startTimeFormatted !== endTimeFormatted
       ? `${startTimeFormatted} - ${endTimeFormatted}`
       : startTimeFormatted || 'TBA';
 
@@ -119,7 +119,7 @@ const EventOverviewCard = ({ event }) => {
                 <p className="font-satoshi font-medium text-base leading-[22px] text-[#121212]">
                   {event?.noOfParticipants != null
                     ? `${event.noOfParticipants.toLocaleString()}+ Attendees`
-                    : ''}
+                    : 'Attendee count to be announced'}
                 </p>
                 <p className="font-satoshi font-normal text-xs leading-4 text-[#606060] mt-0.5">
                   Expected Attendees
@@ -134,7 +134,7 @@ const EventOverviewCard = ({ event }) => {
                 <p className="font-satoshi font-medium text-base leading-[22px] text-[#121212]">
                   {event?.exhibitors != null
                     ? `${event.exhibitors}+ Exhibitors`
-                    : ''}
+                    : 'No exhibitors at the moment'}
                 </p>
                 <p className="font-satoshi font-normal text-xs leading-4 text-[#606060] mt-0.5">
                   Exhibitors

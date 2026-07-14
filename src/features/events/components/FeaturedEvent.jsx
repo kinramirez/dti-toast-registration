@@ -72,8 +72,12 @@ const FeaturedEvent = ({ event }) => {
   const formatTimeRange = () => {
     const startTime = formatTime(event.event_start_time) || 'TBA';
     const endTime = formatTime(event.event_end_time) || 'TBA';
+    const range =
+      startTime && endTime && startTime !== endTime
+        ? `${startTime} - ${endTime}`
+        : startTime || 'TBA';
     return {
-      range: `${startTime} - ${endTime}`,
+      range,
       label: 'Both Days',
     };
   };
