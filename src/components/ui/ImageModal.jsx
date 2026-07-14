@@ -13,8 +13,6 @@ const ImageModal = ({ src, images, alt, onClose }) => {
   const previousFocusRef = useRef(null);
   const announcerRef = useRef(null);
 
-  if (!src && !hasCarousel) return null;
-
   const totalImages = carouselImages.length;
   const currentSrc = carouselImages[currentIndex] || src;
 
@@ -28,8 +26,21 @@ const ImageModal = ({ src, images, alt, onClose }) => {
     [totalImages],
   );
 
-  const goNext = useCallback(() => goTo(currentIndex + 1), [goTo, currentIndex]);
-  const goPrev = useCallback(() => goTo(currentIndex - 1), [goTo, currentIndex]);
+  const goNext = useCallback(() => {
+    setCurrentIndex((prev) => {
+      const next = (prev + 1) % totalImages;
+      setImgLoading((l) => ({ ...l, [next]: true }));
+      return next;
+    });
+  }, [totalImages]);
+
+  const goPrev = useCallback(() => {
+    setCurrentIndex((prev) => {
+      const next = (prev - 1 + totalImages) % totalImages;
+      setImgLoading((l) => ({ ...l, [next]: true }));
+      return next;
+    });
+  }, [totalImages]);
 
   // Announce slide change for screen readers
   useEffect(() => {
@@ -58,15 +69,19 @@ const ImageModal = ({ src, images, alt, onClose }) => {
         return;
       }
 
-      if (!hasCarousel) return;
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        if (!hasCarousel) return;
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          goPrev();
+        } else {
+          e.preventDefault();
+          goNext();
+        }
+        return;
+      }
 
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        goPrev();
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        goNext();
-      } else if (e.key === 'Tab') {
+      if (e.key === 'Tab') {
         const focusable = focusableElements();
         if (focusable.length === 0) return;
         const first = focusable[0];
@@ -105,6 +120,8 @@ const ImageModal = ({ src, images, alt, onClose }) => {
     if (imgErrors[index]) return FALLBACK_IMAGE;
     return imgSrc || FALLBACK_IMAGE;
   };
+
+  if (!src && !hasCarousel) return null;
 
   return (
     <div
