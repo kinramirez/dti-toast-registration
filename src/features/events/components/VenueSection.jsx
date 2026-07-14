@@ -77,9 +77,10 @@ const VenueSection = ({ event }) => {
         </div>
 
         {/* Venue Photo */}
-        <div
+        <button
           onClick={() => setIsPhotoOpen(true)}
-          className="rounded-lg overflow-hidden cursor-pointer group relative"
+          aria-label="View venue photos"
+          className="rounded-lg overflow-hidden cursor-pointer group relative w-full appearance-none border-none bg-none p-0 focus-visible:ring-2 focus-visible:ring-[#C55F61] focus-visible:ring-offset-2"
         >
           <img
             src={venueThumbnail}
@@ -98,7 +99,7 @@ const VenueSection = ({ event }) => {
               </span>
             </div>
           )}
-        </div>
+        </button>
       </div>
 
       {isPhotoOpen && (
