@@ -9,6 +9,7 @@ import ContactUs from './pages/ContactUs'
 import EventFormPage from './pages/EventFormPage'
 import EventPage from './pages/EventPage'
 import EventDetailsPage from './pages/EventDetailsPage'
+import TemporaryLanding from './pages/TemporaryLanding'
 
 function ScrollBehavior() {
   const { pathname, hash } = useLocation()
@@ -46,14 +47,14 @@ function AppFrame() {
   return (
     <div className="appShell">
       
-      {isEventPage ? (
+      {!isEventRegisterPage && (isEventPage ? (
         <EventsHeader
           title={getTitle()}
           breadcrumb={undefined}
         />
       ) : (
         <Header />
-      )}
+      ))}
       <ScrollBehavior />
       <main className="appMain">
         <Routes>

@@ -209,7 +209,7 @@ function WhatsNextTimeline() {
   );
 }
 
-function RegisteredEventCard({ event }) {
+function RegisteredEventCard({ event, hideViewButton = false }) {
   const navigate = useNavigate();
 
   if (!event) {
@@ -392,6 +392,7 @@ function RegisteredEventCard({ event }) {
             ))}
           </ul>
 
+          {!hideViewButton && (
           <button
             type="button"
             onClick={() => {
@@ -409,6 +410,7 @@ function RegisteredEventCard({ event }) {
           >
             View Event Details &rarr;
           </button>
+          )}
         </div>
       </div>
     </section>
@@ -419,7 +421,7 @@ function RegisteredEventCard({ event }) {
    Main RegistrationSuccess component
    ─────────────────────────────────────────── */
 
-export default function RegistrationSuccess({ userEmail, event, onBackToHome }) {
+export default function RegistrationSuccess({ userEmail, event, onBackToHome, hideViewEventButton = false }) {
   return (
     <div className="relative z-10 bg-white min-h-screen flex flex-col">
       {/* Content area — fills available space, pushes footer down */}
@@ -434,7 +436,7 @@ export default function RegistrationSuccess({ userEmail, event, onBackToHome }) 
         <WhatsNextTimeline />
 
         {/* 4. Registered Event Card */}
-        <RegisteredEventCard event={event} />
+        <RegisteredEventCard event={event} hideViewButton={hideViewEventButton} />
 
         {/* 5. Support Strip — reuses existing ContactStrip from event details page */}
         <ContactStrip />
