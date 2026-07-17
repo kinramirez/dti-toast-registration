@@ -45,7 +45,7 @@ const EventDetailsPage = () => {
     getEventById(id)
       .then((ev) => {
         if (!cancelled) {
-          setFetchedEvent(ev);
+          setFetchedEvent(normalizeEvent(ev));
           setIsLoading(false);
         }
       })
@@ -69,7 +69,7 @@ const EventDetailsPage = () => {
 
   const handleRegister = () => {
     if (event) {
-      navigate('/event/register', { state: { event } });
+      navigate(`/event/${event.id}/register`, { state: { event } });
     }
   };
 
@@ -279,7 +279,7 @@ const EventDetailsPage = () => {
 
               {/* Script Tagline */}
               <p className="font-corinthia text-[48px] sm:text-[64px] md:text-[80px] lg:text-[96px] leading-[1.2] lg:leading-[115px] text-[#C55F61]">
-                {event?.tagline || 'Your forever begins here'}
+                {event?.tagline}
               </p>
 
               {/* Description */}
@@ -288,8 +288,7 @@ const EventDetailsPage = () => {
                   !isDescExpanded ? 'line-clamp-2' : ''
                 } md:line-clamp-none`}
               >
-                {event.description ||
-                  'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.'}
+                {event.description}
               </p>
 
               {/* Read more / Show less toggle — mobile only */}

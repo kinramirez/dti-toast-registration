@@ -30,7 +30,7 @@ function ScrollBehavior() {
 function AppFrame() {
   const location = useLocation()
   const isEventPage = location.pathname.startsWith('/event') || location.pathname === '/' || location.pathname === '/contact'
-  const isEventRegisterPage = location.pathname === '/event/register'
+  const isEventRegisterPage = /\/event\/[^/]+\/register$/.test(location.pathname)
   const isEventDetailsPage = /^\/event\/[^/]+$/.test(location.pathname) && !isEventRegisterPage
   const isContactPage = location.pathname === '/contact'
 
@@ -58,7 +58,7 @@ function AppFrame() {
       <main className="appMain">
         <Routes>
           <Route path="/" element={<EventPage />} />
-          <Route path="/event/register" element={<EventFormPage />} />
+          <Route path="/event/:eventGuid/register" element={<EventFormPage />} />
           <Route path="/event/:id" element={<EventDetailsPage />} />
           <Route path="/contact" element={<ContactUs />} />
           <Route path="*" element={<Navigate to="/" replace />} />

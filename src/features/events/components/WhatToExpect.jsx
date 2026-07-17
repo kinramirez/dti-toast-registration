@@ -90,15 +90,15 @@ const WhatToExpect = ({ event }) => {
 
   return (
     <section className="max-w-container mx-auto px-8 max-sm:px-6 py-8">
-      <h2 className="font-satoshi font-bold text-2xl leading-8 text-[#121212] text-left mb-12">
+      <h2 className="font-satoshi font-bold text-2xl leading-8 text-[#121212] text-center mb-12">
         What to Expect
       </h2>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 justify-center">
+      <div className="flex flex-wrap justify-center gap-8">
         {items.map((item, idx) => {
           const Icon = getIconForTitle(item.title);
           return (
-            <div key={idx} className="flex flex-col items-center text-center">
+            <div key={idx} className="flex flex-col items-center text-center w-[160px] max-sm:w-[140px]">
               {/* Icon circle */}
               <div
                 className="w-[52px] h-[52px] rounded-full flex items-center justify-center mb-4"
