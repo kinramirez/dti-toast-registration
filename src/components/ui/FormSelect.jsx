@@ -41,6 +41,7 @@ export default function FormSelect({
             'w-full appearance-none bg-white border border-[#ACACAC] rounded-[6px] pl-[17px] pr-10 h-[52px] text-sm outline-none transition-all',
             'disabled:cursor-not-allowed disabled:opacity-60',
             'focus:ring-2 focus:ring-[#C55F61] focus:ring-offset-1',
+            '[&_option]:text-[#121212]',
             error
               ? 'ring-2 ring-red-100 focus:ring-red-200'
               : '',

@@ -13,13 +13,10 @@ import { formatDate, formatTime } from '@/lib/utils/eventUtils';
 
 const DESCRIPTION_LIMIT = 200;
 
-const PLACEHOLDER_DESCRIPTION =
-  'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.';
-
 const EventOverviewCard = ({ event }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
-  const description = event?.description || PLACEHOLDER_DESCRIPTION;
+  const description = event?.description || '';
   const shouldTruncate = description.length > DESCRIPTION_LIMIT;
   const displayDescription =
     isDescriptionExpanded || !shouldTruncate
@@ -52,7 +49,7 @@ const EventOverviewCard = ({ event }) => {
       : startDay || '';
 
   const timeRangeLabel =
-    startTimeFormatted && endTimeFormatted
+    startTimeFormatted && endTimeFormatted && startTimeFormatted !== endTimeFormatted
       ? `${startTimeFormatted} - ${endTimeFormatted}`
       : startTimeFormatted || 'TBA';
 
@@ -107,11 +104,10 @@ const EventOverviewCard = ({ event }) => {
               <MapPin className="w-6 h-6 text-[#C55F61] shrink-0 mt-0.5" />
               <div>
                 <p className="font-satoshi font-medium text-base leading-[22px] text-[#121212]">
-                  {event?.location || 'TBA'}
+                  {event?.location}
                 </p>
                 <p className="font-satoshi font-normal text-xs leading-4 text-[#606060] mt-0.5">
-                  {event?.venueAddress ||
-                    'Gil Puyat Ave. cor. Diosdado Macapagal Blvd., Pasay City, Metro Manila'}
+                  {event?.venueAddress}
                 </p>
               </div>
             </div>
@@ -123,7 +119,7 @@ const EventOverviewCard = ({ event }) => {
                 <p className="font-satoshi font-medium text-base leading-[22px] text-[#121212]">
                   {event?.noOfParticipants != null
                     ? `${event.noOfParticipants.toLocaleString()}+ Attendees`
-                    : 'TBA'}
+                    : 'Attendee count to be announced'}
                 </p>
                 <p className="font-satoshi font-normal text-xs leading-4 text-[#606060] mt-0.5">
                   Expected Attendees
@@ -138,7 +134,7 @@ const EventOverviewCard = ({ event }) => {
                 <p className="font-satoshi font-medium text-base leading-[22px] text-[#121212]">
                   {event?.exhibitors != null
                     ? `${event.exhibitors}+ Exhibitors`
-                    : 'TBA'}
+                    : 'No exhibitors at the moment'}
                 </p>
                 <p className="font-satoshi font-normal text-xs leading-4 text-[#606060] mt-0.5">
                   Exhibitors

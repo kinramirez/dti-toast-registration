@@ -82,6 +82,68 @@ export const getEventMonthKey = (startDate) => {
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'https://api.toastweddingfair.ph/api/v1';
 
+const UPLOADS_BASE_PATH = (() => {
+  try {
+    const origin = new URL(API_BASE_URL).origin;
+    return `${origin}/uploads/events/`;
+  } catch {
+    return 'https://api.toastweddingfair.ph/uploads/events/';
+  }
+})();
+
+const EVENT_FALLBACKS = {
+  category: 'Uncategorized Event',
+  title: 'Event Title To Be Announced',
+  tagline: 'Exciting details to follow.',
+  description: 'More information about this event is coming soon. Please check back later!',
+  startDate: 'Date To Be Announced',
+  endDate: 'Date To Be Announced',
+  location: 'Venue To Be Announced',
+  region: 'Region not specified',
+  isFeatured: false,
+  buttonText: 'Learn More',
+  event_start_time: 'Time To Be Announced',
+  event_end_time: 'Time To Be Announced',
+  venueAddress: 'Address pending',
+  latitude: 0.0,
+  longitude: 0.0,
+  venuePhoto: [],
+  highlights: ['Event highlights will be announced shortly.'],
+  whatToExpect: [
+    {
+      title: 'Schedule in Progress',
+      description:
+        'We are currently finalizing the activities for this event. Stay tuned for updates!',
+    },
+  ],
+};
+
+/**
+ * Applies per-field fallback values to an event object.
+ * Only fills in fields that are null, undefined, empty string, or empty array.
+ * Does NOT overwrite existing valid values (including 0 for numeric fields).
+ */
+const applyFallbacks = (event) => {
+  const result = { ...event };
+  for (const [field, fallback] of Object.entries(EVENT_FALLBACKS)) {
+    const current = result[field];
+    if (
+      current == null ||
+      current === '' ||
+      (Array.isArray(current) && current.length === 0)
+    ) {
+      if (Array.isArray(fallback)) {
+        result[field] = [...fallback];
+      } else if (typeof fallback === 'object' && fallback !== null) {
+        result[field] = { ...fallback };
+      } else {
+        result[field] = fallback;
+      }
+    }
+  }
+  return result;
+};
+
 const getImageCandidate = (value) => {
   if (!value) return '';
 
@@ -170,6 +232,20 @@ export const normalizeEvent = (event) => {
   const highlights = safeJsonParse(event.highlights);
   const whatToExpect = safeJsonParse(event.whatToExpect);
 
+  // Parse venuePhoto: JSON-stringified array of bare filenames → array of full URLs
+  const rawVenuePhoto = safeJsonParse(event.venuePhoto);
+  const venuePhoto = Array.isArray(rawVenuePhoto)
+    ? rawVenuePhoto
+        .map((filename) => {
+          if (!filename || typeof filename !== 'string') return '';
+          // If already a full URL (e.g., from double-normalization), return as-is
+          if (/^(https?:)?\/\//i.test(filename)) return filename;
+          // Build full URL: uploads base path + filename
+          return `${UPLOADS_BASE_PATH}${filename}`;
+        })
+        .filter(Boolean)
+    : [];
+
   // Coerce numeric fields (distinguish 0 from null/missing)
   const latitude =
     event.latitude != null && event.latitude !== ''
@@ -186,7 +262,7 @@ export const normalizeEvent = (event) => {
       ? Number(event.daysOfInspiration)
       : null;
 
-  return {
+  const normalized = {
     ...event,
     id: event.guid ?? event.id,
     startDate: String(event.startDate ?? ''),
@@ -203,13 +279,15 @@ export const normalizeEvent = (event) => {
     latitude: Number.isNaN(latitude) ? null : latitude,
     longitude: Number.isNaN(longitude) ? null : longitude,
     venueAddress: event.venueAddress ?? null,
-    venuePhoto: event.venuePhoto ?? null,
+    venuePhoto,
     tagline: event.tagline ?? null,
     exhibitors: Number.isNaN(exhibitors) ? null : exhibitors,
     daysOfInspiration: Number.isNaN(daysOfInspiration)
       ? null
       : daysOfInspiration,
   };
+
+  return applyFallbacks(normalized);
 };
 
 export const isEventUpcoming = (event) => {

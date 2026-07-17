@@ -10,7 +10,14 @@ const FALLBACK_GOOGLE_MAPS_URL =
 const getGoogleMapsUrl = (event) => {
   const lat = event?.latitude;
   const lng = event?.longitude;
-  if (lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng)) {
+  // Guard against near-zero (Null Island) coordinates from fallback values
+  if (
+    lat != null &&
+    lng != null &&
+    !Number.isNaN(lat) &&
+    !Number.isNaN(lng) &&
+    !(Math.abs(lat) < 0.01 && Math.abs(lng) < 0.01)
+  ) {
     return `https://www.google.com/maps?q=${lat},${lng}`;
   }
   const query = event?.location || 'World Trade Center Metro Manila';
@@ -20,8 +27,10 @@ const getGoogleMapsUrl = (event) => {
 const VenueSection = ({ event }) => {
   const [isPhotoOpen, setIsPhotoOpen] = useState(false);
 
-  const venueName = event?.location || 'World Trade Center Metro Manila';
-  const venuePhoto = event?.venuePhoto || event?.image || wtc_placeholder;
+  const venueName = event?.location;
+  const venuePhotos = event?.venuePhoto || [];
+  const venueThumbnail = venuePhotos[0] || event?.image || wtc_placeholder;
+  const hasMultiplePhotos = venuePhotos.length > 1;
   const mapsUrl = getGoogleMapsUrl(event);
 
   return (
@@ -53,8 +62,7 @@ const VenueSection = ({ event }) => {
             {venueName}
           </h3>
           <p className="font-satoshi font-medium text-sm leading-[19px] text-[#606060] mb-6">
-            {event?.venueAddress ||
-              'Gil Puyat Ave. cor. Diosdado Macapagal Blvd., Pasay City, Metro Manila'}
+            {event?.venueAddress}
           </p>
 
           <a
@@ -69,12 +77,13 @@ const VenueSection = ({ event }) => {
         </div>
 
         {/* Venue Photo */}
-        <div
+        <button
           onClick={() => setIsPhotoOpen(true)}
-          className="rounded-lg overflow-hidden cursor-pointer group"
+          aria-label="View venue photos"
+          className="rounded-lg overflow-hidden cursor-pointer group relative w-full appearance-none border-none bg-none p-0 focus-visible:ring-2 focus-visible:ring-[#C55F61] focus-visible:ring-offset-2"
         >
           <img
-            src={venuePhoto}
+            src={venueThumbnail}
             alt={`${venueName} venue`}
             onError={(e) => {
               e.currentTarget.onerror = null;
@@ -82,12 +91,21 @@ const VenueSection = ({ event }) => {
             }}
             className="w-full h-[250px] object-cover rounded-lg group-hover:scale-105 transition duration-500"
           />
-        </div>
+          {/* Hover overlay — only when multiple photos exist */}
+          {hasMultiplePhotos && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg">
+              <span className="text-white font-satoshi font-bold text-sm">
+                See more
+              </span>
+            </div>
+          )}
+        </button>
       </div>
 
       {isPhotoOpen && (
         <ImageModal
-          src={venuePhoto}
+          src={venueThumbnail}
+          images={venuePhotos.slice(0, 4)}
           alt={`${venueName} venue`}
           onClose={() => setIsPhotoOpen(false)}
         />

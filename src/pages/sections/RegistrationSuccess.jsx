@@ -252,13 +252,21 @@ function RegisteredEventCard({ event, hideViewButton = false }) {
     : startDay;
 
   // Time formatting
-  const startTime = event.event_start_time ? formatTime(event.event_start_time) : '';
-  const endTime = event.event_end_time ? formatTime(event.event_end_time) : '';
-  const timeRange = startTime && endTime ? `${startTime} – ${endTime}` : startTime;
+  const startTimeRaw = event.event_start_time ? formatTime(event.event_start_time) : '';
+  const endTimeRaw = event.event_end_time ? formatTime(event.event_end_time) : '';
+  const isFallbackTime = (t) => t === 'Time To Be Announced';
+  const timeRange =
+    startTimeRaw && endTimeRaw && !isFallbackTime(startTimeRaw) && !isFallbackTime(endTimeRaw)
+      ? startTimeRaw !== endTimeRaw
+        ? `${startTimeRaw} – ${endTimeRaw}`
+        : startTimeRaw
+      : startTimeRaw && !isFallbackTime(startTimeRaw)
+        ? startTimeRaw
+        : 'to be announced';
 
   // Location
   const locationName = event.location || '';
-  const cityName = event.city || event.rawRegion || '';
+  const cityName = event.city || event.venueAddress || '';
 
   const isFeatured = event.featured || event.isFeatured;
 
