@@ -4,7 +4,14 @@ import BenefitsCard from './BenefitsCard';
 import hero_bg from '@/assets/hero_bg.png';
 
 const HeroSection = () => {
-  const scrollToUpcoming = () => {
+  const scrollToUpcoming = (e) => {
+    // Only intercept a plain left-click so we can smooth-scroll.
+    // Let modified clicks (ctrl/cmd/middle-click) and right-click
+    // context menu ("Open link in new tab") behave natively.
+    if (e.defaultPrevented) return;
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+    e.preventDefault();
     document.getElementById('upcoming-fairs')?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -15,8 +22,18 @@ const HeroSection = () => {
     >
       {/* Background image overlay */}
       <div
-        className="absolute inset-0 bg-cover bg-center"
+        className="absolute inset-0 bg-cover bg-[position:50%_20%]"
         style={{ backgroundImage: `url(${hero_bg})` }}
+        aria-hidden="true"
+      />
+
+      {/* Text legibility scrim — mobile only, sits between image and content.
+          Fades from solid at top (behind headline) to transparent lower down. */}
+      <div
+        className="absolute inset-0 md:hidden"
+        style={{
+          background: 'linear-gradient(180deg, rgba(255,246,243,0.92) 0%, rgba(255,246,243,0.75) 45%, rgba(255,246,243,0.15) 75%, rgba(255,246,243,0) 100%)',
+        }}
         aria-hidden="true"
       />
 
@@ -35,9 +52,10 @@ const HeroSection = () => {
             <p className="text-base text-[#434343] font-satoshi mt-4 max-w-lg leading-relaxed">
               Register today to secure your spot and stay updated with everything you need for an exceptional event experience.
             </p>
-            <button
+            <a
+              href="#upcoming-fairs"
               onClick={scrollToUpcoming}
-              className="mt-8 inline-flex items-center gap-2 px-8 py-3 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61] max-md:mx-auto"
+              className="mt-8 inline-flex items-center gap-2 px-8 py-3 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61] max-md:mx-auto no-underline"
               style={{
                 background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
                 textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
@@ -53,7 +71,7 @@ const HeroSection = () => {
             >
               View Upcoming Fairs
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </a>
           </div>
 
           {/* Right: Benefits Card */}

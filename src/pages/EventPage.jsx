@@ -183,6 +183,16 @@ const Events = () => {
     return () => { cancelled = true; };
   }, [currentPage, mobilePage, searchFilters.region, searchFilters.keyword, searchFilters.startDateFrom, searchFilters.startDateTo, refreshTrigger, isMobile]);
 
+  useEffect(() => {
+    if (eventsLoading) return;
+    if (window.location.hash === '#upcoming-fairs') {
+      // Wait a tick for the DOM to paint the now-loaded content
+      requestAnimationFrame(() => {
+        document.getElementById('upcoming-fairs')?.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+  }, [eventsLoading]);
+  
   // Handle search from SearchBar
   const handleSearch = useCallback((filters) => {
     setSearchFilters(filters);

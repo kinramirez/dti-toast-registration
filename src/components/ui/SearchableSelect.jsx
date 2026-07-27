@@ -66,9 +66,11 @@ export default function SearchableSelect({
             if (!disabled) setOpen(true);
           }}
           onChange={(e) => setQuery(e.target.value)}
+          aria-invalid={Boolean(error)}
+          aria-required={required}
           className={`w-full bg-white border border-[#ACACAC] rounded-[6px] pl-[17px] pr-10 h-[52px] text-sm outline-none transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 focus:ring-2 focus:ring-[#C55F61] focus:ring-offset-1 ${
-            !selectedLabel && !open ? 'text-[#ACACAC]' : 'text-slate-800'
-          }`}
+            error ? 'ring-2 ring-red-100 focus:ring-red-200' : ''
+          } ${!selectedLabel && !open ? 'text-[#ACACAC]' : 'text-slate-800'}`}
         />
         <div
           className={`pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#606060] ${
