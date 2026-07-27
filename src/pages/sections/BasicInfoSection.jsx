@@ -28,6 +28,9 @@ const AGE_OPTIONS = [
  * @param {function} onChange - Generic field change handler
  * @param {object} errors - Validation errors
  * @param {object} touched - Per-field touched state
+ * @param {function} registerField - name => refCallback, provided by
+ *   RegistrationStep1 so this section's fields participate in the
+ *   whole-form "scroll to first invalid field" behavior.
  * @param {string} regionCode - Current region code for cascading
  * @param {function} setRegionCode - Region change handler
  * @param {string} cityCode - Current city code
@@ -44,6 +47,7 @@ export default function BasicInfoSection({
   onChange,
   errors,
   touched,
+  registerField,
   regionCode,
   setRegionCode,
   cityCode,
@@ -133,40 +137,46 @@ export default function BasicInfoSection({
       <div className='flex flex-col gap-8'>
         {/* Row 1: First Name / Last Name (2-col) */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
-          <FormField
-            label='First Name (as shown on valid ID)'
-            name='firstName'
-            required
-            value={form.firstName}
-            onChange={handleChange}
-            placeholder='Enter Firstname'
-            error={touched.firstName ? errors.firstName : undefined}
-          />
-          <FormField
-            label='Last Name (as shown on valid ID)'
-            name='lastName'
-            required
-            value={form.lastName}
-            onChange={handleChange}
-            placeholder='Enter Lastname'
-            error={touched.lastName ? errors.lastName : undefined}
-          />
+          <div ref={registerField('firstName')}>
+            <FormField
+              label='First Name (as shown on valid ID)'
+              name='firstName'
+              required
+              value={form.firstName}
+              onChange={handleChange}
+              placeholder='Enter Firstname'
+              error={touched.firstName ? errors.firstName : undefined}
+            />
+          </div>
+          <div ref={registerField('lastName')}>
+            <FormField
+              label='Last Name (as shown on valid ID)'
+              name='lastName'
+              required
+              value={form.lastName}
+              onChange={handleChange}
+              placeholder='Enter Lastname'
+              error={touched.lastName ? errors.lastName : undefined}
+            />
+          </div>
         </div>
 
         {/* Row 2: Age / Gender (2-col) */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
-          <FormSelect
-            label='Age'
-            name='age'
-            required
-            value={form.age}
-            onChange={handleChange}
-            placeholder='Select your age'
-            options={AGE_OPTIONS}
-            error={touched.age ? errors.age : undefined}
-          />
+          <div ref={registerField('age')}>
+            <FormSelect
+              label='Age'
+              name='age'
+              required
+              value={form.age}
+              onChange={handleChange}
+              placeholder='Select your age'
+              options={AGE_OPTIONS}
+              error={touched.age ? errors.age : undefined}
+            />
+          </div>
           {/* Gender Radio Buttons */}
-          <div className='flex flex-col gap-1'>
+          <div className='flex flex-col gap-1' ref={registerField('gender')}>
             <label className='text-[#121212] mb-2 block text-[14px] font-medium font-satoshi'>
               Gender<span className='text-red-500 ml-0.5'>*</span>
             </label>
@@ -212,19 +222,21 @@ export default function BasicInfoSection({
         </div>
 
         {/* Row 3: Email Address (full-width) */}
-        <FormField
-          label='Email Address'
-          name='email'
-          type='email'
-          required
-          value={form.email}
-          onChange={handleChange}
-          placeholder='Enter Email Address'
-          error={touched.email ? errors.email : undefined}
-        />
+        <div ref={registerField('email')}>
+          <FormField
+            label='Email Address'
+            name='email'
+            type='email'
+            required
+            value={form.email}
+            onChange={handleChange}
+            placeholder='Enter Email Address'
+            error={touched.email ? errors.email : undefined}
+          />
+        </div>
 
         {/* Row 4: Mobile Number (full-width) with +63 prefix */}
-        <div className='flex flex-col gap-1'>
+        <div className='flex flex-col gap-1' ref={registerField('phone')}>
           <label className='text-[#121212] mb-2 block text-[14px] font-medium font-satoshi'>
             Mobile Number<span className='text-red-500 ml-0.5'>*</span>
           </label>
@@ -236,7 +248,6 @@ export default function BasicInfoSection({
             <input
               type='tel'
               name='phone'
-              required
               value={form.phone}
               onChange={handleChange}
               placeholder='Enter mobile number'
@@ -266,46 +277,52 @@ export default function BasicInfoSection({
 
         {/* Row 5: Region / City (2-col) */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
-          <SearchableSelect
-            label='Region'
-            required
-            value={regionCode}
-            onChange={handleProvinceChange}
-            options={provinceOptions}
-            placeholder='Select your region'
-            error={
-              touched.province && (errors.province || addressError)
-                ? errors.province || addressError
-                : undefined
-            }
-          />
-          <SearchableSelect
-            label='City'
-            required
-            value={cityCode}
-            onChange={handleCityChange}
-            options={citySelectOptions}
-            placeholder='Select your city'
-            disabled={!regionCode}
-            error={
-              touched.city && errors.city ? errors.city : undefined
-            }
-          />
+          <div ref={registerField('province')}>
+            <SearchableSelect
+              label='Region'
+              required
+              value={regionCode}
+              onChange={handleProvinceChange}
+              options={provinceOptions}
+              placeholder='Select your region'
+              error={
+                touched.province && (errors.province || addressError)
+                  ? errors.province || addressError
+                  : undefined
+              }
+            />
+          </div>
+          <div ref={registerField('city')}>
+            <SearchableSelect
+              label='City'
+              required
+              value={cityCode}
+              onChange={handleCityChange}
+              options={citySelectOptions}
+              placeholder='Select your city'
+              disabled={!regionCode}
+              error={
+                touched.city && errors.city ? errors.city : undefined
+              }
+            />
+          </div>
         </div>
 
         {/* Row 6: Barangay (full-width) */}
-        <SearchableSelect
-          label='Barangay'
-          required
-          value={barangayCode}
-          onChange={handleBarangayChange}
-          options={barangaySelectOptions}
-          placeholder='Select your barangay'
-          disabled={!cityCode}
-          error={
-            touched.barangay && errors.barangay ? errors.barangay : undefined
-          }
-        />
+        <div ref={registerField('barangay')}>
+          <SearchableSelect
+            label='Barangay'
+            required
+            value={barangayCode}
+            onChange={handleBarangayChange}
+            options={barangaySelectOptions}
+            placeholder='Select your barangay'
+            disabled={!cityCode}
+            error={
+              touched.barangay && errors.barangay ? errors.barangay : undefined
+            }
+          />
+        </div>
       </div>
     </section>
   );

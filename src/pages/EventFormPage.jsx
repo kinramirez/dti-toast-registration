@@ -327,6 +327,7 @@ export default function EventFormPage() {
                     {...stepTransition}
                   >
                     <RegistrationStep1
+                      event={event}
                       form={form}
                       onChange={onChange}
                       errors={step1Errors}
@@ -367,8 +368,8 @@ export default function EventFormPage() {
             </div>
 
             {/* Right: Sidebar */}
-            {step === 1 && <RegistrationSidebar />}
-            {step === 2 && <RegistrationSidebar showWhyRegister={false} />}
+            {step === 1 && <RegistrationSidebar event={event} />}
+            {step === 2 && <RegistrationSidebar event={event} showWhyRegister={false} />}
           </div>
 
           {/* ── Trust Footer Strip ── */}
