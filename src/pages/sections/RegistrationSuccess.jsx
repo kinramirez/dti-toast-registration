@@ -11,7 +11,6 @@ import {
   Search,
   PartyPopper,
 } from 'lucide-react';
-import dtiLogo from '@/assets/dtilogo.png';
 import toastSuccessBg from '@/assets/toast-success-bg.png';
 import Footer from '@/components/Footer';
 import ContactStrip from '@/features/events/components/ContactStrip';
@@ -209,7 +208,7 @@ function WhatsNextTimeline() {
   );
 }
 
-function RegisteredEventCard({ event, hideViewButton = false }) {
+function RegisteredEventCard({ event }) {
   const navigate = useNavigate();
 
   if (!event) {
@@ -283,15 +282,22 @@ function RegisteredEventCard({ event, hideViewButton = false }) {
       >
         {/* Left: Event Photo */}
         <div className="flex-shrink-0">
-          <img
-            src={eventImage || dtiLogo}
-            alt={eventTitle}
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src = dtiLogo;
-            }}
-            className="w-full lg:w-[360px] h-[240px] lg:h-[360px] rounded-lg object-cover"
-          />
+          {eventImage ? (
+            <img
+              src={eventImage}
+              alt={eventTitle}
+              className="w-full lg:w-[360px] h-[240px] lg:h-[360px] rounded-lg object-cover"
+            />
+          ) : (
+            <div
+              className="w-full lg:w-[360px] h-[240px] lg:h-[360px] rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: '#F1F1F1' }}
+            >
+              <span className="font-satoshi text-[14px]" style={{ color: '#808080' }}>
+                No image available
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Center: Event Details */}
@@ -392,7 +398,6 @@ function RegisteredEventCard({ event, hideViewButton = false }) {
             ))}
           </ul>
 
-          {!hideViewButton && (
           <button
             type="button"
             onClick={() => {
@@ -410,7 +415,6 @@ function RegisteredEventCard({ event, hideViewButton = false }) {
           >
             View Event Details &rarr;
           </button>
-          )}
         </div>
       </div>
     </section>
@@ -421,7 +425,7 @@ function RegisteredEventCard({ event, hideViewButton = false }) {
    Main RegistrationSuccess component
    ─────────────────────────────────────────── */
 
-export default function RegistrationSuccess({ userEmail, event, onBackToHome, hideViewEventButton = false }) {
+export default function RegistrationSuccess({ userEmail, event, onBackToHome }) {
   return (
     <div className="relative z-10 bg-white min-h-screen flex flex-col">
       {/* Content area — fills available space, pushes footer down */}
@@ -436,7 +440,7 @@ export default function RegistrationSuccess({ userEmail, event, onBackToHome, hi
         <WhatsNextTimeline />
 
         {/* 4. Registered Event Card */}
-        <RegisteredEventCard event={event} hideViewButton={hideViewEventButton} />
+        <RegisteredEventCard event={event} />
 
         {/* 5. Support Strip — reuses existing ContactStrip from event details page */}
         <ContactStrip />

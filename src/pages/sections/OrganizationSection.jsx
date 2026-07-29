@@ -12,12 +12,16 @@ import FormField from '@/components/ui/FormField';
  * Props:
  * @param {object} form - All form field values
  * @param {function} onChange - Generic field change handler
- * @param {object} errors - Validation errors
- * @param {object} touched - Per-field touched state
+ * @param {function} registerField - name => refCallback, provided by
+ *   RegistrationStep1 so this section's fields participate in the
+ *   whole-form "scroll to first invalid field" behavior. Both fields
+ *   here are optional in the schema, so this is mostly future-proofing
+ *   in case either becomes required later.
  */
 export default function OrganizationSection({
   form,
   onChange,
+  registerField,
 }) {
   function handleChange(e) {
     onChange(e);
@@ -46,20 +50,24 @@ export default function OrganizationSection({
 
       {/* Fields: Company / Job Position (2-col) */}
       <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
-        <FormField
-          label='Company'
-          name='company'
-          value={form.company}
-          onChange={handleChange}
-          placeholder='Enter your company'
-        />
-        <FormField
-          label='Job Position'
-          name='position'
-          value={form.position}
-          onChange={handleChange}
-          placeholder='Enter your job position'
-        />
+        <div ref={registerField?.('company')}>
+          <FormField
+            label='Company'
+            name='company'
+            value={form.company}
+            onChange={handleChange}
+            placeholder='Enter your company'
+          />
+        </div>
+        <div ref={registerField?.('position')}>
+          <FormField
+            label='Job Position'
+            name='position'
+            value={form.position}
+            onChange={handleChange}
+            placeholder='Enter your job position'
+          />
+        </div>
       </div>
     </section>
   );

@@ -1,4 +1,5 @@
 import { Ticket, SquareChartGantt, Trophy, Lightbulb } from 'lucide-react';
+import { formatDate } from '@/lib/utils/eventUtils';
 
 /**
  * RegistrationSidebar — Right sidebar with Reminder card and "Why Register?" card.
@@ -11,6 +12,9 @@ import { Ticket, SquareChartGantt, Trophy, Lightbulb } from 'lucide-react';
  * - White bg, shadow: 0px 9px 4px 1px rgba(18,18,18,0.05)
  * - Heading: "Reminder" — Cormorant Garamond 28px, rose
  * - Body + warning text (moved from old RegistrationStep1 disclaimers)
+ * - Registration deadline text is derived from event.endDate (the event's
+ *   last day) rather than hardcoded, so it always stays in sync with
+ *   EventOverviewCard. Venue name is likewise pulled from event.location.
  *
  * "Why Register?" Card (532×256px):
  * - Background: rgba(197,95,97,0.2), shadow: 0px 6px 4px rgba(18,18,18,0.15)
@@ -40,7 +44,18 @@ const WHY_REGISTER_ITEMS = [
   },
 ];
 
-export default function RegistrationSidebar({ showWhyRegister = true }) {
+/**
+ * @param {object} event - Event data (same object passed to EventOverviewCard
+ *   and RegistrationStep1). Provides `location` (venue name) and `endDate`
+ *   (used as the registration deadline — the last day of the event).
+ * @param {boolean} showWhyRegister - Toggles the "Why Register?" card.
+ */
+export default function RegistrationSidebar({ event, showWhyRegister = true }) {
+  const venueText = event?.location ? ` at ${event.location}` : '';
+
+  // Registration deadline = the event's last day (endDate)
+  const registrationDeadline = formatDate(event?.endDate) || 'the event date';
+
   return (
     <aside className='w-full lg:w-[532px] flex-shrink-0 flex flex-col gap-8'>
       {/* ── Reminder Card ── */}
@@ -57,17 +72,18 @@ export default function RegistrationSidebar({ showWhyRegister = true }) {
           Reminder
         </h3>
         <p className='text-[16px] text-brand-dark leading-relaxed mb-4'>
-          Free Entrance for those who register now until July 29, 2026, 5PM.
-          Submission of this form confirms that you agree to receive updates 
-          about Toast Wedding Fair! If you receive the form auto reply, it means 
-          we have received your form and you are guaranteed
-          FREE ENTRY!
+          Free entrance for those who register now until {registrationDeadline}!
+          Submission of this form confirms that you agree to receive updates
+          about Toast Wedding Fair! If you receive the form auto reply, it means
+          we have received your form and you are guaranteed FREE ENTRY! Valid ID
+          should be presented{venueText} on the day. Name should match valid ID.
         </p>
         <p className='text-[16px] font-bold text-danger-red leading-relaxed'>
-          This pre-registration is valid per individual/guest only.
+          1 Registration = 1 Person = 1 Full Day Entry.
         </p>
         <p className='text-[16px] font-bold text-danger-red leading-relaxed'>
-          If you are registering as a couple, family, or group, each individual must register separately.
+          Only 1 full day entry is free so no need to register the same person
+          twice.
         </p>
       </div>
 

@@ -16,7 +16,7 @@ import flowerBg from '@/assets/flower_bg.png';
  *
  * @param {string} eventId - The event GUID for the back link target
  */
-export default function RegistrationHero({ eventId, hideBackLink = false }) {
+export default function RegistrationHero({ eventId }) {
   return (
     <section
       className='relative w-full h-[631px] flex items-center overflow-hidden'
@@ -43,7 +43,6 @@ export default function RegistrationHero({ eventId, hideBackLink = false }) {
       {/* Text content */}
       <div className='relative z-10 w-full max-w-container mx-auto px-8'>
         {/* Breadcrumb */}
-        {!hideBackLink && (
         <Link
           to={eventId ? `/event/${eventId}` : '/event'}
           className='inline-flex items-center gap-1.5 text-[#808080] hover:text-[#C55F61] transition-colors font-satoshi text-[16px] font-medium mb-8'
@@ -51,7 +50,6 @@ export default function RegistrationHero({ eventId, hideBackLink = false }) {
           <ArrowLeft className='w-4 h-4' aria-hidden='true' />
           Back to Event
         </Link>
-        )}
 
         {/* Headline + Script accent */}
         <div className='max-w-[635px]'>

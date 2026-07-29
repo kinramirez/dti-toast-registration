@@ -294,7 +294,7 @@ const EventDetailsPage = () => {
               {/* Read more / Show less toggle — mobile only */}
               <button
                 onClick={() => setIsDescExpanded((prev) => !prev)}
-                className="md:hidden inline-flex items-center gap-1 text-[#C55F61] font-satoshi font-bold text-sm hover:opacity-80 transition-opacity"
+                className="md:hidden inline-flex items-center gap-1 text-[#C55F61] font-satoshi font-bold text-sm hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61] rounded-sm"
               >
                 {isDescExpanded ? (
                   <>
@@ -311,7 +311,7 @@ const EventDetailsPage = () => {
               <div className="flex flex-wrap items-center gap-6">
                 <button
                   onClick={handleRegister}
-                  className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-lg text-white font-satoshi font-bold text-base leading-[22px] transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61]"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-lg text-white font-satoshi font-bold text-base leading-[22px] transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61]"
                   style={{
                     background:
                       'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
@@ -335,7 +335,7 @@ const EventDetailsPage = () => {
                 <button
                   ref={shareButtonRef}
                   onClick={() => setIsShareOpen(true)}
-                  className="inline-flex items-center gap-2 text-[#C55F61] font-satoshi font-bold text-base leading-[22px] hover:opacity-80 transition-opacity"
+                  className="inline-flex items-center gap-2 text-[#C55F61] font-satoshi font-bold text-base leading-[22px] hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#C55F61] rounded-sm"
                 >
                   <Share2 className="w-4 h-4" />
                   Share Event

@@ -16,7 +16,7 @@ import RegistrationStep1 from './sections/RegistrationStep1';
 import RegistrationStep2 from './sections/RegistrationStep2';
 import RegistrationSuccess from './sections/RegistrationSuccess';
 
-export default function EventFormPage({ event: propEvent, hideBackLink = false, hideViewEventButton = false }) {
+export default function EventFormPage() {
   const [form, setForm] = useState(initialForm);
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -312,7 +312,7 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
   return (
     <div className='relative z-10 bg-white'>
       {/* ── Hero Band (Steps 1 & 2 only; Step 3 has its own hero) ── */}
-      {(step === 1 || step === 2) && <RegistrationHero eventId={eventGuId} hideBackLink={hideBackLink} />}
+      {(step === 1 || step === 2) && <RegistrationHero eventId={eventGuId} />}
 
       {/* ── Steps 1 & 2: Two-Column Layout ── */}
       {(step === 1 || step === 2) && (
@@ -327,6 +327,7 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
                     {...stepTransition}
                   >
                     <RegistrationStep1
+                      event={event}
                       form={form}
                       onChange={onChange}
                       errors={step1Errors}
@@ -367,8 +368,8 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
             </div>
 
             {/* Right: Sidebar */}
-            {step === 1 && <RegistrationSidebar />}
-            {step === 2 && <RegistrationSidebar showWhyRegister={false} />}
+            {step === 1 && <RegistrationSidebar event={event} />}
+            {step === 2 && <RegistrationSidebar event={event} showWhyRegister={false} />}
           </div>
 
           {/* ── Trust Footer Strip ── */}
@@ -396,7 +397,6 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
               userEmail={form.email}
               event={event}
               onBackToHome={handleBackToHome}
-              hideViewEventButton={hideViewEventButton}
             />
           </motion.div>
         </AnimatePresence>
