@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { ArrowRight } from 'lucide-react';
 
 import StepIndicator from '@/components/ui/StepIndicator';
@@ -11,6 +12,86 @@ const STEPS = [
   { number: 2, label: 'Review & Submit' },
 ];
 
+// Full field order across all Step 1 fields, in the order they appear
+// visually on the page (Basic Info → Organization → Purpose of
+// Visit). This drives "scroll to first invalid field" — update this
+// list if fields are reordered or added.
+const FIELD_ORDER = [
+  // Basic Information
+  'firstName',
+  'lastName',
+  'age',
+  'gender',
+  'email',
+  'phone',
+  'province',
+  'city',
+  'barangay',
+  // Organization/Company (optional fields, kept for completeness)
+  'company',
+  'position',
+  // Purpose of Visit
+  'role',
+  'eventDate',
+  'occasion',
+  'guests',
+  'occasionOther',
+  'budget',
+  'suppliers',
+  'suppliersOther',
+  'specificSuppliers',
+  'lumiPromos',
+  'discoveryChannel',
+  'discoveryOther',
+];
+
+/**
+ * Builds a compact, human-friendly date range label that avoids repeating
+ * the year (and month) when they're shared between start/end dates:
+ *   - Same day:            "November 12, 2026"
+ *   - Same month & year:   "November 12 – 16, 2026"
+ *   - Same year only:      "November 12 – December 16, 2026"
+ *   - Different years:     "November 12, 2026 – January 3, 2027"
+ */
+function formatDateRange(startDateStr, endDateStr) {
+  const start = startDateStr ? new Date(startDateStr) : null;
+  const end = endDateStr ? new Date(endDateStr) : null;
+
+  const startValid = start && !Number.isNaN(start.getTime());
+  const endValid = end && !Number.isNaN(end.getTime());
+
+  if (!startValid && !endValid) return 'TBA';
+  if (startValid && !endValid) {
+    return start.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+  if (!startValid && endValid) {
+    return end.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+
+  const sameDay = start.toDateString() === end.toDateString();
+  if (sameDay) {
+    return start.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const sameMonth = sameYear && start.getMonth() === end.getMonth();
+
+  if (sameMonth) {
+    const month = start.toLocaleDateString('en-US', { month: 'long' });
+    return `${month} ${start.getDate()} – ${end.getDate()}, ${end.getFullYear()}`;
+  }
+
+  if (sameYear) {
+    const startLabel = start.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+    const endLabel = end.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+    return `${startLabel} – ${endLabel}, ${end.getFullYear()}`;
+  }
+
+  const startLabel = start.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const endLabel = end.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  return `${startLabel} – ${endLabel}`;
+}
+
 /**
  * RegistrationStep1 — Consolidated data-entry form with all 24 fields.
  *
@@ -22,6 +103,9 @@ const STEPS = [
  * - "Save & Continue →" gradient button (205×48px)
  *
  * Props:
+ * @param {object} event - Event data (same object passed to EventOverviewCard).
+ *   Used to derive the header title, date/venue subtitle so it always matches
+ *   the event's actual data instead of being hardcoded.
  * @param {object} form - All form field values
  * @param {function} onChange - Generic field change handler
  * @param {object} errors - Merged validation errors (all 24 fields)
@@ -39,6 +123,7 @@ const STEPS = [
  * @param {string|null} addressError - Address loading error
  */
 export default function RegistrationStep1({
+  event,
   form,
   onChange,
   errors,
@@ -55,6 +140,50 @@ export default function RegistrationStep1({
   barangayOptions,
   addressError,
 }) {
+  const fieldRefs = useRef({});
+  const prevTouchedRef = useRef({});
+
+  // Derive the header date range from the same event data EventOverviewCard uses,
+  // collapsing the year (and month, when possible) so it doesn't repeat.
+  const dateRangeLabel = formatDateRange(event?.startDate, event?.endDate);
+
+  const dateVenueLabel = event?.location
+    ? `${dateRangeLabel} - ${event.location}`
+    : dateRangeLabel;
+
+  // Shared registration function passed to every section so each
+  // field — regardless of which section renders it — reports its
+  // DOM node into one central map.
+  function registerField(name) {
+    return (el) => {
+      fieldRefs.current[name] = el;
+    };
+  }
+
+  // Whenever a field newly becomes touched (either from a single
+  // blur, or all-at-once on a failed submit) and it has an error,
+  // scroll to the FIRST invalid field in true page order and focus it.
+  useEffect(() => {
+    const prevTouched = prevTouchedRef.current;
+    const newlyTouchedInvalid = FIELD_ORDER.find((name) => {
+      const isNewlyTouched = touched?.[name] && !prevTouched?.[name];
+      return isNewlyTouched && errors?.[name];
+    });
+
+    if (newlyTouchedInvalid) {
+      const el = fieldRefs.current[newlyTouchedInvalid];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const focusable = el.matches('input, select, textarea, button')
+          ? el
+          : el.querySelector('input, select, textarea, button');
+        focusable?.focus({ preventScroll: true });
+      }
+    }
+
+    prevTouchedRef.current = touched || {};
+  }, [touched, errors]);
+
   function handleSubmit(e) {
     e.preventDefault();
     onNext();
@@ -70,13 +199,13 @@ export default function RegistrationStep1({
       {/* ── Card Header ── */}
       <div className='flex flex-col items-center text-center mb-16'>
         <h1 className='font-cormorant text-[32px] font-bold text-brand-dark leading-tight mb-2'>
-          Pre-Register for FREE Entrance - Toast Wedding Fair
+          Pre-Register for FREE Entrance - {event?.title}
         </h1>
         <p
           className='text-[20px] font-bold font-satoshi'
           style={{ color: '#C55F61' }}
         >
-          August 8 - 9, 2026 - SMX Convention Center Manila
+          {dateVenueLabel}
         </p>
       </div>
 
@@ -92,6 +221,7 @@ export default function RegistrationStep1({
           onChange={onChange}
           errors={errors}
           touched={touched}
+          registerField={registerField}
           regionCode={regionCode}
           setRegionCode={setRegionCode}
           cityCode={cityCode}
@@ -108,6 +238,7 @@ export default function RegistrationStep1({
         <OrganizationSection
           form={form}
           onChange={onChange}
+          registerField={registerField}
         />
 
         {/* ── Section 3: Purpose of Visit ── */}
@@ -116,6 +247,7 @@ export default function RegistrationStep1({
           onChange={onChange}
           errors={errors}
           touched={touched}
+          registerField={registerField}
         />
 
         {/* ── Save & Continue Button ── */}

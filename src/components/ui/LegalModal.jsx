@@ -25,11 +25,21 @@ import { X } from 'lucide-react';
 const LEGAL_CONTENT = {
   privacy: {
     title: 'Privacy Policy',
-    body: 'We are putting the finishing touches on our legal pages. Our comprehensive Privacy Policy and Terms of Use will be available shortly. Thank you for your patience!',
+    lastUpdated: 'July 22, 2026',
+    body: `
+We collect the information you give us directly — like your name and email when you subscribe or contact us — along with basic usage data such as event searches and pages viewed. We use this to send you event updates you've opted into, respond to inquiries, and improve the site.
+
+We don't sell your information, and only share it with service providers who help us run the site (e.g. email or hosting providers). You can unsubscribe anytime via the link in our emails, or contact us to access, correct, or delete your information.
+    `.trim(),
   },
   terms: {
     title: 'Terms of Use',
-    body: 'We are putting the finishing touches on our legal pages. Our comprehensive Privacy Policy and Terms of Use will be available shortly. Thank you for your patience!',
+    lastUpdated: 'July 22, 2026',
+    body: `
+By using this site, you agree to use it lawfully and not interfere with its operation. Event details are provided by organizers and may change without notice — please confirm directly with the organizer before attending. All site content is owned by Toast Wedding Fair and may not be reproduced without permission.
+
+The site is provided "as is" without warranties, and we're not liable for issues arising from your use of the site or attendance at listed events. We may update these terms from time to time; continued use means you accept the changes.
+    `.trim(),
   },
 };
 
@@ -163,14 +173,17 @@ export default function LegalModal({ isOpen, onClose, type = 'privacy', triggerR
             >
               {content.title}
             </h2>
-
             {/* Body */}
-            <p
-              id="legal-modal-body"
-              className="font-satoshi font-medium text-base leading-[22px] text-[#606060]"
-            >
-              {content.body}
-            </p>
+            <div id="legal-modal-body" className="flex flex-col gap-4">
+              {content.body.split('\n\n').map((paragraph, i) => (
+                <p
+                  key={i}
+                  className="font-satoshi font-medium text-base leading-[22px] text-[#606060]"
+                >
+                  {paragraph}
+                </p>
+              ))}
+            </div>
 
             {/* Close button */}
             <div className="flex justify-end">

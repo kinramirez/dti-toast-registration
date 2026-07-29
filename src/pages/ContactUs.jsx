@@ -1,67 +1,84 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Mail, Phone, MapPin, Clock, Send, AlertCircle } from 'lucide-react';
-
-// Static data defined outside component to prevent re-creation on every render
-const CONTACT_INFO = [
-  {
-    icon: Mail,
-    label: 'Email',
-    value: 'hello@dtiweddingfair.com',
-    href: 'mailto:hello@dtiweddingfair.com',
-  },
-  {
-    icon: Phone,
-    label: 'Phone',
-    value: '+63 (2) 8123 4567',
-    href: 'tel:+63281234567',
-  },
-  {
-    icon: MapPin,
-    label: 'Address',
-    value: '123 Wedding Street, Makati City, Metro Manila',
-    href: null, // Changed from '#' to null to prevent page jump
-  },
-  {
-    icon: Clock,
-    label: 'Business Hours',
-    value: 'Mon - Fri: 9:00 AM - 6:00 PM',
-    href: null,
-  },
-];
+import { useContact } from '@/hooks/useContact';
+import { useContactInfo } from '@/hooks/useContactInfo';
 
 const ContactUs = () => {
+  const { loading: submitting, error: submitError, submitContact } = useContact();
+  const { contactInfo, loading: infoLoading, fetchContactInfo } = useContactInfo();
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     subject: '',
     message: '',
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchContactInfo();
+  }, [fetchContactInfo]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (error) setError(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await submitContact({
+        fullName: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
+      });
       setSubmitted(true);
       setFormData({ name: '', email: '', subject: '', message: '' });
-    } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    } catch {
+      // submitError is already set inside useContact
     }
   };
+
+  // Map API fields -> the { icon, label, value, href } shape the UI expects
+  const contactItems = useMemo(() => {
+    if (!contactInfo) return [];
+    return [
+      {
+        icon: Mail,
+        label: 'Email',
+        value: contactInfo.email,
+        href: contactInfo.email ? `mailto:${contactInfo.email}` : null,
+      },
+      {
+        icon: Phone,
+        label: 'Phone',
+        value: contactInfo.phone,
+        href: contactInfo.phone ? `tel:${contactInfo.phone.replace(/[^\d+]/g, '')}` : null,
+      },
+      {
+        icon: MapPin,
+        label: 'Address',
+        value: contactInfo.address,
+        href: null,
+      },
+      {
+        icon: Clock,
+        label: 'Business Hours',
+        value: contactInfo.businessHours,
+        href: null,
+      },
+    ].filter((item) => Boolean(item.value));
+  }, [contactInfo]);
+
+  const hasCoords =
+    contactInfo?.latitude != null &&
+    contactInfo?.longitude != null &&
+    !Number.isNaN(parseFloat(contactInfo.latitude)) &&
+    !Number.isNaN(parseFloat(contactInfo.longitude));
+
+  const mapsUrl = hasCoords
+    ? contactInfo.mapUrl || `https://maps.google.com/?q=${contactInfo.latitude},${contactInfo.longitude}`
+    : null;
 
   if (submitted) {
     return (
@@ -103,12 +120,12 @@ const ContactUs = () => {
           <div className="bg-gray-50 p-8 rounded-2xl">
             <h2 className="text-xl font-bold text-[#212121] mb-6">Send us a Message</h2>
             
-            {error && (
+            {submitError && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-start gap-3">
                 <AlertCircle size={20} className="shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium">Failed to send message</p>
-                  <p className="text-sm">{error}</p>
+                  <p className="text-sm">{submitError}</p>
                 </div>
               </div>
             )}
@@ -125,7 +142,7 @@ const ContactUs = () => {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  disabled={isSubmitting}
+                  disabled={submitting}
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#1877F2] focus:border-transparent outline-none transition-all bg-white disabled:opacity-50"
                   placeholder="Juan Dela Cruz"
                 />
@@ -142,7 +159,7 @@ const ContactUs = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  disabled={isSubmitting}
+                  disabled={submitting}
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#1877F2] focus:border-transparent outline-none transition-all bg-white disabled:opacity-50"
                   placeholder="juan@example.com"
                 />
@@ -158,7 +175,7 @@ const ContactUs = () => {
                   value={formData.subject}
                   onChange={handleChange}
                   required
-                  disabled={isSubmitting}
+                  disabled={submitting}
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#1877F2] focus:border-transparent outline-none transition-all bg-white disabled:opacity-50"
                 >
                   <option value="">Select a subject</option>
@@ -181,7 +198,7 @@ const ContactUs = () => {
                   onChange={handleChange}
                   required
                   rows={5}
-                  disabled={isSubmitting}
+                  disabled={submitting}
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#1877F2] focus:border-transparent outline-none transition-all resize-none bg-white disabled:opacity-50"
                   placeholder="Tell us how we can help you..."
                 />
@@ -189,10 +206,10 @@ const ContactUs = () => {
 
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={submitting}
                 className="w-full bg-[#1877F2] text-white py-4 rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {isSubmitting ? 'Sending...' : <>Send Message <Send size={18} /></>}
+                {submitting ? 'Sending...' : <>Send Message <Send size={18} /></>}
               </button>
             </form>
           </div>
@@ -202,36 +219,63 @@ const ContactUs = () => {
             <h2 className="text-xl font-bold text-[#212121] mb-6">Get in Touch</h2>
             
             <div className="space-y-6 mb-10">
-              {CONTACT_INFO.map((item, index) => (
-                <div key={index} className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-[#1877F2]/10 text-[#1877F2] rounded-xl flex items-center justify-center shrink-0">
-                    <item.icon size={24} />
+              {infoLoading ? (
+                <p className="text-sm text-gray-400">Loading contact info...</p>
+              ) : (
+                contactItems.map((item, index) => (
+                  <div key={index} className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-[#1877F2]/10 text-[#1877F2] rounded-xl flex items-center justify-center shrink-0">
+                      <item.icon size={24} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-[#212121] text-sm uppercase tracking-wide mb-1">
+                        {item.label}
+                      </h3>
+                      {item.href ? (
+                        <a 
+                          href={item.href}
+                          className="text-gray-600 hover:text-[#1877F2] transition-colors"
+                        >
+                          {item.value}
+                        </a>
+                      ) : (
+                        <p className="text-gray-600">{item.value}</p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-[#212121] text-sm uppercase tracking-wide mb-1">
-                      {item.label}
-                    </h3>
-                    {item.href ? (
-                      <a 
-                        href={item.href}
-                        className="text-gray-600 hover:text-[#1877F2] transition-colors"
-                      >
-                        {item.value}
-                      </a>
-                    ) : (
-                      <p className="text-gray-600">{item.value}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
-            <div className="bg-gray-100 rounded-2xl h-64 flex items-center justify-center border-2 border-dashed border-gray-300">
-              <div className="text-center text-gray-400">
-                <MapPin size={48} className="mx-auto mb-2" />
-                <p>Map Integration Placeholder</p>
+            {/* Map */}
+            {hasCoords ? (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative block rounded-2xl overflow-hidden h-64 group"
+              >
+                <iframe
+                  title="Event location map"
+                  src={`https://maps.google.com/maps?q=${contactInfo.latitude},${contactInfo.longitude}&z=16&output=embed`}
+                  className="w-full h-full border-0 pointer-events-none"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-end justify-end p-3">
+                  <span className="bg-white text-[#1877F2] text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                    Open in Google Maps
+                  </span>
+                </div>
+              </a>
+            ) : (
+              <div className="bg-gray-100 rounded-2xl h-64 flex items-center justify-center border-2 border-dashed border-gray-300">
+                <div className="text-center text-gray-400">
+                  <MapPin size={48} className="mx-auto mb-2" />
+                  <p>Map location not available</p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
