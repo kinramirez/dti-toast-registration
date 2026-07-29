@@ -270,7 +270,7 @@ export default function PurposeOfVisitSection({
               Which suppliers are you looking for? Tick all that you need.
               <span className='text-red-500 ml-0.5'>*</span>
             </label>
-            <div className='grid grid-cols-1 gap-2 pt-2 max-h-[280px] overflow-y-auto'>
+            <div className='grid grid-cols-1 gap-2 pt-2 px-1 max-h-[280px] overflow-y-auto overflow-x-hidden'>
               {SUPPLIERS_OPTIONS.map((option) => {
                 const isOther = option === 'Other';
                 const isDisabled = isOther && hasOtherSuppliersSelected;
@@ -287,7 +287,7 @@ export default function PurposeOfVisitSection({
                       type='button'
                       disabled={isDisabled}
                       onClick={() => !isDisabled && handleSuppliersChange(option)}
-                      className={`flex-shrink-0 w-4 h-4 rounded-sm border flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-[#C55F61] focus:ring-offset-1 ${
+                      className={`appearance-none flex-shrink-0 w-4 h-4 rounded-sm border flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-[#C55F61] focus:ring-offset-1 ${
                         isChecked
                           ? 'bg-[#C55F61] border-[#C55F61]'
                           : 'border-[#ACACAC] bg-white'

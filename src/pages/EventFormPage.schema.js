@@ -11,6 +11,12 @@ export const initialForm = {
   email: '',
   phone: '',
 
+  // Address
+  region: '',
+  province: '',
+  city: '',
+  barangay: '',
+
   // Organization/Company
   company: '',
   position: '',
@@ -28,15 +34,11 @@ export const initialForm = {
   lumiPromos: '',
   discoveryChannel: '',
   discoveryOther: '',
-  province: '',
-  city: '',
-  barangay: '',
   consent: false,
 
   // Legacy fields (retained for backward compatibility)
   fullName: '',
   address: '',
-  region: '',
   contactNumber: '',
   purpose: 'General Shopper',
   source: 'DTI Social Media',
@@ -63,7 +65,8 @@ export const registrationSchema = z.object({
       /^9\d{9}$/,
       'Please enter a valid 10-digit number starting with 9 (e.g., 9123456789).',
     ),
-  province: z.string().min(1, 'Please select your region.'),
+  region: z.string().min(1, 'Please select your region.'),
+  province: z.string().min(1, 'Please select your province.'),
   city: z.string().min(1, 'Please select your city.'),
   barangay: z.string().min(1, 'Please select your barangay.'),
 

@@ -4,10 +4,12 @@ import { barangays, cities, provinces, regions } from 'select-philippines-addres
 
 export function usePhilippineAddress() {
   const [regionCode, setRegionCodeState] = useState('')
+  const [provinceCode, setProvinceCodeState] = useState('')
   const [cityCode, setCityCodeState] = useState('')
   const [barangayCode, setBarangayCodeState] = useState('')
 
   const [regionOptions, setRegionOptions] = useState([])
+  const [provinceOptions, setProvinceOptions] = useState([])
   const [cityOptions, setCityOptions] = useState([])
   const [barangayOptions, setBarangayOptions] = useState([])
 
@@ -15,6 +17,17 @@ export function usePhilippineAddress() {
 
   function setRegionCode(nextCode) {
     setRegionCodeState(nextCode)
+    setProvinceCodeState('')
+    setCityCodeState('')
+    setBarangayCodeState('')
+    setProvinceOptions([])
+    setCityOptions([])
+    setBarangayOptions([])
+    setAddressError(null)
+  }
+
+  function setProvinceCode(nextCode) {
+    setProvinceCodeState(nextCode)
     setCityCodeState('')
     setBarangayCodeState('')
     setCityOptions([])
@@ -34,6 +47,7 @@ export function usePhilippineAddress() {
     setAddressError(null)
   }
 
+  // Load regions on mount
   useEffect(() => {
     let cancelled = false
 
@@ -55,30 +69,46 @@ export function usePhilippineAddress() {
     }
   }, [])
 
+  // Load provinces whenever region changes
   useEffect(() => {
     let cancelled = false
 
-    if (!regionCode) return () => {}
+    if (!regionCode) {
+      setProvinceOptions([])
+      return () => {}
+    }
 
     provinces(regionCode)
-      .then(async (provinceList) => {
+      .then((provinceList) => {
         if (cancelled) return
-
-        const provinceArray = Array.isArray(provinceList) ? provinceList : []
-        const cityLists = await Promise.all(
-          provinceArray.map(async (province) => {
-            const cityList = await cities(province.province_code)
-            const cityArray = Array.isArray(cityList) ? cityList : []
-            return cityArray.map((city) => ({
-              ...city,
-              province_code: province.province_code,
-              province_name: province.province_name,
-            }))
-          }),
-        )
-
+        setProvinceOptions(Array.isArray(provinceList) ? provinceList : [])
+        setAddressError(null)
+      })
+      .catch((error) => {
         if (cancelled) return
-        setCityOptions(cityLists.flat())
+        setProvinceOptions([])
+        setAddressError('Could not load province data. Please try again later.')
+        console.error('Failed to fetch provinces:', error)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [regionCode])
+
+  // Load cities whenever province changes
+  useEffect(() => {
+    let cancelled = false
+
+    if (!provinceCode) {
+      setCityOptions([])
+      return () => {}
+    }
+
+    cities(provinceCode)
+      .then((cityList) => {
+        if (cancelled) return
+        setCityOptions(Array.isArray(cityList) ? cityList : [])
         setAddressError(null)
       })
       .catch((error) => {
@@ -91,12 +121,16 @@ export function usePhilippineAddress() {
     return () => {
       cancelled = true
     }
-  }, [regionCode])
+  }, [provinceCode])
 
+  // Load barangays whenever city changes
   useEffect(() => {
     let cancelled = false
 
-    if (!cityCode) return () => {}
+    if (!cityCode) {
+      setBarangayOptions([])
+      return () => {}
+    }
 
     barangays(cityCode)
       .then((list) => {
@@ -119,11 +153,14 @@ export function usePhilippineAddress() {
   return {
     regionCode,
     setRegionCode,
+    provinceCode,
+    setProvinceCode,
     cityCode,
     setCityCode,
     barangayCode,
     setBarangayCode,
     regionOptions,
+    provinceOptions,
     cityOptions,
     barangayOptions,
     addressError,
