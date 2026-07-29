@@ -24,6 +24,7 @@ const FIELD_ORDER = [
   'gender',
   'email',
   'phone',
+  'region',
   'province',
   'city',
   'barangay',
@@ -93,7 +94,7 @@ function formatDateRange(startDateStr, endDateStr) {
 }
 
 /**
- * RegistrationStep1 — Consolidated data-entry form with all 24 fields.
+ * RegistrationStep1 — Consolidated data-entry form with all 25 fields.
  *
  * Design spec §2.3–2.8, §4.3–4.9:
  * - Form card: 977px, white, rounded-lg, shadow
@@ -108,18 +109,21 @@ function formatDateRange(startDateStr, endDateStr) {
  *   the event's actual data instead of being hardcoded.
  * @param {object} form - All form field values
  * @param {function} onChange - Generic field change handler
- * @param {object} errors - Merged validation errors (all 24 fields)
+ * @param {object} errors - Merged validation errors (all 25 fields)
  * @param {object} touched - Per-field touched state
  * @param {function} onNext - "Save & Continue" handler (validates → setStep(2))
  * @param {string} regionCode - Current region code for cascading
  * @param {function} setRegionCode - Region change handler
+ * @param {string} provinceCode - Current province code for cascading
+ * @param {function} setProvinceCode - Province change handler
  * @param {string} cityCode - Current city code
  * @param {function} setCityCode - City change handler
  * @param {string} barangayCode - Current barangay code
  * @param {function} setBarangayCode - Barangay change handler
  * @param {array} regionOptions - Async-loaded region list
- * @param {array} cityOptions - Async-loaded city list
- * @param {array} barangayOptions - Async-loaded barangay list
+ * @param {array} provinceOptions - Async-loaded province list (depends on regionCode)
+ * @param {array} cityOptions - Async-loaded city list (depends on provinceCode)
+ * @param {array} barangayOptions - Async-loaded barangay list (depends on cityCode)
  * @param {string|null} addressError - Address loading error
  */
 export default function RegistrationStep1({
@@ -131,11 +135,14 @@ export default function RegistrationStep1({
   onNext,
   regionCode,
   setRegionCode,
+  provinceCode,
+  setProvinceCode,
   cityCode,
   setCityCode,
   barangayCode,
   setBarangayCode,
   regionOptions,
+  provinceOptions,
   cityOptions,
   barangayOptions,
   addressError,
@@ -224,11 +231,14 @@ export default function RegistrationStep1({
           registerField={registerField}
           regionCode={regionCode}
           setRegionCode={setRegionCode}
+          provinceCode={provinceCode}
+          setProvinceCode={setProvinceCode}
           cityCode={cityCode}
           setCityCode={setCityCode}
           barangayCode={barangayCode}
           setBarangayCode={setBarangayCode}
           regionOptions={regionOptions}
+          provinceOptions={provinceOptions}
           cityOptions={cityOptions}
           barangayOptions={barangayOptions}
           addressError={addressError}

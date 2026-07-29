@@ -20,8 +20,8 @@ const AGE_OPTIONS = [
  *
  * Design spec §2.5:
  * - Section header: User icon badge + "Basic Information" + subtitle
- * - Fields: firstName, lastName, age, gender, email, phone (+63 prefix), region, city, barangay
- * - Layout: 2-col → 2-col → full → full → 2-col → full
+ * - Fields: firstName, lastName, age, gender, email, phone (+63 prefix), region, province, city, barangay
+ * - Layout: 2-col → 2-col → full → full → 2-col → 2-col → full
  *
  * Props:
  * @param {object} form - All form field values
@@ -33,13 +33,16 @@ const AGE_OPTIONS = [
  *   whole-form "scroll to first invalid field" behavior.
  * @param {string} regionCode - Current region code for cascading
  * @param {function} setRegionCode - Region change handler
+ * @param {string} provinceCode - Current province code for cascading
+ * @param {function} setProvinceCode - Province change handler
  * @param {string} cityCode - Current city code
  * @param {function} setCityCode - City change handler
  * @param {string} barangayCode - Current barangay code
  * @param {function} setBarangayCode - Barangay change handler
  * @param {array} regionOptions - Async-loaded region list
- * @param {array} cityOptions - Async-loaded city list
- * @param {array} barangayOptions - Async-loaded barangay list
+ * @param {array} provinceOptions - Async-loaded province list (depends on regionCode)
+ * @param {array} cityOptions - Async-loaded city list (depends on provinceCode)
+ * @param {array} barangayOptions - Async-loaded barangay list (depends on cityCode)
  * @param {string|null} addressError - Address loading error
  */
 export default function BasicInfoSection({
@@ -50,11 +53,14 @@ export default function BasicInfoSection({
   registerField,
   regionCode,
   setRegionCode,
+  provinceCode,
+  setProvinceCode,
   cityCode,
   setCityCode,
   barangayCode,
   setBarangayCode,
   regionOptions,
+  provinceOptions,
   cityOptions,
   barangayOptions,
   addressError,
@@ -68,9 +74,14 @@ export default function BasicInfoSection({
   }
 
   // Transform hook options to { value, label } format for SearchableSelect
-  const provinceOptions = regionOptions.map((r) => ({
+  const regionSelectOptions = regionOptions.map((r) => ({
     value: r.region_code,
     label: r.region_name,
+  }));
+
+  const provinceSelectOptions = provinceOptions.map((p) => ({
+    value: p.province_code,
+    label: p.province_name,
   }));
 
   const citySelectOptions = cityOptions.map((c) => ({
@@ -83,13 +94,28 @@ export default function BasicInfoSection({
     label: b.brgy_name,
   }));
 
-  function handleProvinceChange(nextCode) {
+  function handleRegionChange(nextCode) {
     setRegionCode(nextCode);
     const selected = regionOptions.find((r) => r.region_code === nextCode);
     onChange({
-      target: { name: 'province', value: selected?.region_name ?? '' },
+      target: { name: 'region', value: selected?.region_name ?? '' },
+    });
+    // Reset province, city, and barangay when region changes
+    setProvinceCode('');
+    setCityCode('');
+    onChange({ target: { name: 'province', value: '' } });
+    onChange({ target: { name: 'city', value: '' } });
+    onChange({ target: { name: 'barangay', value: '' } });
+  }
+
+  function handleProvinceChange(nextCode) {
+    setProvinceCode(nextCode);
+    const selected = provinceOptions.find((p) => p.province_code === nextCode);
+    onChange({
+      target: { name: 'province', value: selected?.province_name ?? '' },
     });
     // Reset city and barangay when province changes
+    setCityCode('');
     onChange({ target: { name: 'city', value: '' } });
     onChange({ target: { name: 'barangay', value: '' } });
   }
@@ -275,23 +301,41 @@ export default function BasicInfoSection({
           ) : null}
         </div>
 
-        {/* Row 5: Region / City (2-col) */}
+        {/* Row 5: Region / Province (2-col) */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
-          <div ref={registerField('province')}>
+          <div ref={registerField('region')}>
             <SearchableSelect
               label='Region'
               required
               value={regionCode}
-              onChange={handleProvinceChange}
-              options={provinceOptions}
+              onChange={handleRegionChange}
+              options={regionSelectOptions}
               placeholder='Select your region'
               error={
-                touched.province && (errors.province || addressError)
-                  ? errors.province || addressError
+                touched.region && (errors.region || addressError)
+                  ? errors.region || addressError
                   : undefined
               }
             />
           </div>
+          <div ref={registerField('province')}>
+            <SearchableSelect
+              label='Province'
+              required
+              value={provinceCode}
+              onChange={handleProvinceChange}
+              options={provinceSelectOptions}
+              placeholder='Select your province'
+              disabled={!regionCode}
+              error={
+                touched.province && errors.province ? errors.province : undefined
+              }
+            />
+          </div>
+        </div>
+
+        {/* Row 6: City / Barangay (2-col) */}
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
           <div ref={registerField('city')}>
             <SearchableSelect
               label='City'
@@ -300,28 +344,26 @@ export default function BasicInfoSection({
               onChange={handleCityChange}
               options={citySelectOptions}
               placeholder='Select your city'
-              disabled={!regionCode}
+              disabled={!provinceCode}
               error={
                 touched.city && errors.city ? errors.city : undefined
               }
             />
           </div>
-        </div>
-
-        {/* Row 6: Barangay (full-width) */}
-        <div ref={registerField('barangay')}>
-          <SearchableSelect
-            label='Barangay'
-            required
-            value={barangayCode}
-            onChange={handleBarangayChange}
-            options={barangaySelectOptions}
-            placeholder='Select your barangay'
-            disabled={!cityCode}
-            error={
-              touched.barangay && errors.barangay ? errors.barangay : undefined
-            }
-          />
+          <div ref={registerField('barangay')}>
+            <SearchableSelect
+              label='Barangay'
+              required
+              value={barangayCode}
+              onChange={handleBarangayChange}
+              options={barangaySelectOptions}
+              placeholder='Select your barangay'
+              disabled={!cityCode}
+              error={
+                touched.barangay && errors.barangay ? errors.barangay : undefined
+              }
+            />
+          </div>
         </div>
       </div>
     </section>

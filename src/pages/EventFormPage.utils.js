@@ -33,14 +33,15 @@ export function buildPayload(form, eventGuId) {
     specificSuppliers: form.specificSuppliers?.trim() || null,
     promoPreference: form.lumiPromos || null,
     discoveryOther: form.discoveryOther.trim() || null,
+    // Address fields
+    region: form.region,
     province: form.province,
     city: form.city,
+    barangay: form.barangay,
     locationOther: '', // Hardcoded empty string — field removed per Figma
     consent: form.consent,
     // Legacy fields (for backward compatibility)
     address: form.address || fullName,
-    region: form.region || form.province,
-    barangay: form.barangay || '',
     contactNumber: form.phone,
     purpose: form.purpose,
     source: form.source,

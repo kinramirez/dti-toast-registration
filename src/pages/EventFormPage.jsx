@@ -64,11 +64,14 @@ export default function EventFormPage() {
   const {
     regionCode,
     setRegionCode,
+    provinceCode,
+    setProvinceCode,
     cityCode,
     setCityCode,
     barangayCode,
     setBarangayCode,
     regionOptions,
+    provinceOptions,
     cityOptions,
     barangayOptions,
     addressError,
@@ -83,6 +86,7 @@ export default function EventFormPage() {
       gender: form.gender,
       email: form.email,
       phone: form.phone,
+      region: form.region,
       province: form.province,
       city: form.city,
       barangay: form.barangay,
@@ -127,7 +131,7 @@ export default function EventFormPage() {
       form.email, form.phone, form.company, form.position,
       form.role, form.eventDate, form.occasion, form.guests, form.budget,
       form.specificSuppliers, form.lumiPromos, form.discoveryChannel,
-      form.discoveryOther, form.province, form.city, form.barangay,
+      form.discoveryOther, form.region, form.province, form.city, form.barangay,
       form.occasionOther, form.suppliersOther,
     ];
     return nonEmptyFields.some((v) => v !== '' && v !== 'Male')
@@ -153,6 +157,7 @@ export default function EventFormPage() {
       gender: true,
       email: true,
       phone: true,
+      region: true,
       province: true,
       city: true,
       barangay: true,
@@ -175,6 +180,7 @@ export default function EventFormPage() {
       gender: form.gender,
       email: form.email,
       phone: form.phone,
+      region: form.region,
       province: form.province,
       city: form.city,
       barangay: form.barangay,
@@ -225,6 +231,7 @@ export default function EventFormPage() {
       gender: form.gender,
       email: form.email,
       phone: form.phone,
+      region: form.region,
       province: form.province,
       city: form.city,
       barangay: form.barangay,
@@ -290,6 +297,7 @@ export default function EventFormPage() {
     setTouched({});
     setSubmitError(null);
     setRegionCode('');
+    setProvinceCode('');
     setCityCode('');
     setBarangayCode('');
     navigate('/', { replace: true });
@@ -335,11 +343,14 @@ export default function EventFormPage() {
                       onNext={handleNextStep1}
                       regionCode={regionCode}
                       setRegionCode={setRegionCode}
+                      provinceCode={provinceCode}
+                      setProvinceCode={setProvinceCode}
                       cityCode={cityCode}
                       setCityCode={setCityCode}
                       barangayCode={barangayCode}
                       setBarangayCode={setBarangayCode}
                       regionOptions={regionOptions}
+                      provinceOptions={provinceOptions}
                       cityOptions={cityOptions}
                       barangayOptions={barangayOptions}
                       addressError={addressError}
