@@ -392,7 +392,7 @@ const Events = () => {
               ) : (
                 <>
                   <div
-                    className="grid grid-cols-2 lg:grid-cols-4 gap-x-[16px] md:gap-x-[10px] gap-y-[34px]"
+                    className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-[34px]"
                   >
                     {paginatedEvents.map((event, index) => (
                       <EventCard
