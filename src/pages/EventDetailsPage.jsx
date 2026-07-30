@@ -220,7 +220,7 @@ const EventDetailsPage = () => {
             </Link>
           </div>
 
-          <div className="grid lg:grid-cols-[1fr_minmax(0,864px)] items-center min-h-[500px] lg:min-h-[600px]">
+          <div className="grid lg:grid-cols-1 items-center min-h-[500px] lg:min-h-[600px]">
             {/* MOBILE-ONLY Hero Image (above text) */}
             <div className="block lg:hidden w-full">
               <div
@@ -248,7 +248,7 @@ const EventDetailsPage = () => {
             </div>
 
             {/* LEFT — Text Column */}
-            <div className="relative z-20 py-8 lg:py-16 space-y-4 lg:space-y-6">
+            <div className="relative z-20 py-8 lg:py-16 space-y-4 lg:space-y-6 lg:max-w-[min(635px,calc(100%-min(864px,50vw)))] break-words">
               {/* Breadcrumb (desktop only — mobile breadcrumb is above the image) */}
               <div className="hidden lg:block">
                 <Link
@@ -278,7 +278,7 @@ const EventDetailsPage = () => {
               </h1>
 
               {/* Script Tagline */}
-              <p className="font-corinthia text-[48px] sm:text-[64px] md:text-[80px] lg:text-[96px] leading-[1.2] lg:leading-[115px] text-[#C55F61]">
+              <p className="font-corinthia text-[clamp(28px,5.5vw,64px)] leading-[1.2] text-[#C55F61]">
                 {event?.tagline}
               </p>
 
@@ -347,7 +347,7 @@ const EventDetailsPage = () => {
             <div className="hidden lg:block relative lg:absolute lg:right-0 lg:top-0 lg:h-full">
               <div
                 onClick={() => setIsImageOpen(true)}
-                className="relative w-full lg:w-[864px] h-[300px] sm:h-[400px] lg:h-full cursor-pointer group overflow-hidden"
+                className="relative w-full lg:w-[min(864px,50vw)] h-[300px] sm:h-[400px] lg:h-full cursor-pointer group overflow-hidden"
               >
                 <img
                   src={event.image || dtiLogo}
