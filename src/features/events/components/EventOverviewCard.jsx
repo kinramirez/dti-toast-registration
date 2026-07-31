@@ -58,7 +58,7 @@ const EventOverviewCard = ({ event }) => {
       className="bg-white rounded-lg mx-auto"
       style={{
         boxShadow: '0px 9px 4px rgba(18, 18, 18, 0.05)',
-        maxWidth: '1544px',
+        maxWidth: '1728px',
       }}
     >
       <div className="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[#C55F61]">

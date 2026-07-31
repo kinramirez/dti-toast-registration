@@ -277,20 +277,20 @@ function RegisteredEventCard({ event }) {
       </span>
 
       <div
-        className="bg-white rounded-lg p-6 sm:p-8 lg:p-10 flex flex-col lg:flex-row gap-8"
+        className="bg-white rounded-lg p-6 sm:p-8 lg:p-10 flex flex-col xl:flex-row gap-8"
         style={{ boxShadow: '0px 9px 4px 1px rgba(18, 18, 18, 0.05)' }}
       >
         {/* Left: Event Photo */}
-        <div className="flex-shrink-0">
+        <div className="w-full xl:w-[360px] xl:flex-shrink-0">
           {eventImage ? (
             <img
               src={eventImage}
               alt={eventTitle}
-              className="w-full lg:w-[360px] h-[240px] lg:h-[360px] rounded-lg object-cover"
+              className="w-full xl:w-[360px] h-[240px] lg:h-[360px] rounded-lg object-cover"
             />
           ) : (
             <div
-              className="w-full lg:w-[360px] h-[240px] lg:h-[360px] rounded-lg flex items-center justify-center"
+              className="w-full xl:w-[360px] h-[240px] lg:h-[360px] rounded-lg flex items-center justify-center"
               style={{ backgroundColor: '#F1F1F1' }}
             >
               <span className="font-satoshi text-[14px]" style={{ color: '#808080' }}>
@@ -301,7 +301,7 @@ function RegisteredEventCard({ event }) {
         </div>
 
         {/* Center: Event Details */}
-        <div className="flex-1 flex flex-col gap-4 min-w-0">
+        <div className="w-full xl:flex-1 flex flex-col gap-4 xl:min-w-0 overflow-hidden break-words">
           {isFeatured && (
             <div
               className="inline-flex items-center gap-1 self-start px-[6px] py-1 rounded font-satoshi font-bold text-[12px]"
@@ -366,7 +366,7 @@ function RegisteredEventCard({ event }) {
 
         {/* Right: Important Reminders Panel */}
         <div
-          className="flex-shrink-0 w-full lg:w-[495px] rounded-lg p-6 sm:p-8 flex flex-col gap-4"
+          className="flex-shrink-0 w-full xl:w-[495px] xl:flex-shrink-0 rounded-lg p-6 sm:p-8 flex flex-col gap-4"
           style={{ backgroundColor: 'rgba(197, 95, 97, 0.10)' }}
         >
           <div className="flex flex-col gap-1">

@@ -75,7 +75,7 @@ const HeroSection = () => {
           </div>
 
           {/* Right: Benefits Card */}
-          <div className="shrink-0 max-sm:w-full">
+          <div className="shrink max-sm:w-full min-w-[280px]">
             <BenefitsCard />
           </div>
         </div>
