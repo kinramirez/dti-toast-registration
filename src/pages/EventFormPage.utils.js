@@ -1,3 +1,5 @@
+import { formatDate } from '@/lib/utils/eventUtils';
+
 export const stepTransition = {
   initial: { opacity: 0, x: 40 },
   animate: { opacity: 1, x: 0 },
@@ -11,7 +13,6 @@ export function buildPayload(form, eventGuId) {
 
   return {
     eventGuid: eventGuId,
-    // Step 1 fields
     fullName,
     firstName: form.firstName.trim(),
     lastName: form.lastName.trim(),
@@ -21,7 +22,6 @@ export function buildPayload(form, eventGuId) {
     mobileNumber: form.phone,
     company: form.company.trim() || null,
     position: form.position.trim() || null,
-    // Purpose fields
     myRoleInOccasion: form.role,
     eventDate: form.eventDate,
     occasionPlanningFor: form.occasion,
@@ -35,9 +35,8 @@ export function buildPayload(form, eventGuId) {
     discoveryOther: form.discoveryOther.trim() || null,
     province: form.province,
     city: form.city,
-    locationOther: '', // Hardcoded empty string — field removed per Figma
+    locationOther: '',
     consent: form.consent,
-    // Legacy fields (for backward compatibility)
     address: form.address || fullName,
     region: form.region || form.province,
     barangay: form.barangay || '',
@@ -50,3 +49,5 @@ export function buildPayload(form, eventGuId) {
     firstTimeToJoin: 'Yes',
   };
 }
+
+export { formatDate };

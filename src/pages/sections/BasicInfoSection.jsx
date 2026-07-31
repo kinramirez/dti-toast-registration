@@ -20,21 +20,34 @@ const AGE_OPTIONS = [
  *
  * Design spec §2.5:
  * - Section header: User icon badge + "Basic Information" + subtitle
- * - Fields: firstName, lastName, age, gender, email, phone (+63 prefix), region, city, barangay
- * - Layout: 2-col → 2-col → full → full → 2-col → full
+ * - Fields: firstName, lastName, age, gender, email, phone (+63 prefix),
+ *   region, province, city, barangay
+ * - Layout: 2-col → 2-col → full → full → 2-col → 2-col
+ *
+ * Every field carries `id="field-<schemaKey>"` so EventFormPage can
+ * scroll to the first invalid field when "Save & Continue" is clicked.
+ *
+ * Per-field errors show as soon as the field is touched — text inputs and
+ * selects mark themselves touched onBlur, radio/checkbox groups and the
+ * region/province/city/barangay selects mark themselves touched as soon
+ * as a selection is made, via `onFieldTouch(fieldName)`.
  *
  * Props:
  * @param {object} form - All form field values
  * @param {function} onChange - Generic field change handler
+ * @param {function} onFieldTouch - Marks a single field as touched (fieldName) => void
  * @param {object} errors - Validation errors
  * @param {object} touched - Per-field touched state
  * @param {string} regionCode - Current region code for cascading
  * @param {function} setRegionCode - Region change handler
+ * @param {string} provinceCode - Current province code for cascading
+ * @param {function} setProvinceCode - Province change handler
  * @param {string} cityCode - Current city code
  * @param {function} setCityCode - City change handler
  * @param {string} barangayCode - Current barangay code
  * @param {function} setBarangayCode - Barangay change handler
  * @param {array} regionOptions - Async-loaded region list
+ * @param {array} provinceOptions - Async-loaded province list
  * @param {array} cityOptions - Async-loaded city list
  * @param {array} barangayOptions - Async-loaded barangay list
  * @param {string|null} addressError - Address loading error
@@ -42,15 +55,19 @@ const AGE_OPTIONS = [
 export default function BasicInfoSection({
   form,
   onChange,
+  onFieldTouch,
   errors,
   touched,
   regionCode,
   setRegionCode,
+  provinceCode,
+  setProvinceCode,
   cityCode,
   setCityCode,
   barangayCode,
   setBarangayCode,
   regionOptions,
+  provinceOptions,
   cityOptions,
   barangayOptions,
   addressError,
@@ -59,14 +76,24 @@ export default function BasicInfoSection({
     onChange(e);
   }
 
+  function handleFieldBlur(fieldName) {
+    onFieldTouch?.(fieldName);
+  }
+
   function handleGenderChange(gender) {
     onChange({ target: { name: 'gender', value: gender } });
+    onFieldTouch?.('gender');
   }
 
   // Transform hook options to { value, label } format for SearchableSelect
-  const provinceOptions = regionOptions.map((r) => ({
+  const regionSelectOptions = regionOptions.map((r) => ({
     value: r.region_code,
     label: r.region_name,
+  }));
+
+  const provinceSelectOptions = provinceOptions.map((p) => ({
+    value: p.province_code,
+    label: p.province_name,
   }));
 
   const citySelectOptions = cityOptions.map((c) => ({
@@ -79,12 +106,26 @@ export default function BasicInfoSection({
     label: b.brgy_name,
   }));
 
-  function handleProvinceChange(nextCode) {
+  function handleRegionChange(nextCode) {
     setRegionCode(nextCode);
     const selected = regionOptions.find((r) => r.region_code === nextCode);
     onChange({
-      target: { name: 'province', value: selected?.region_name ?? '' },
+      target: { name: 'region', value: selected?.region_name ?? '' },
     });
+    onFieldTouch?.('region');
+    // Reset province, city, barangay when region changes
+    onChange({ target: { name: 'province', value: '' } });
+    onChange({ target: { name: 'city', value: '' } });
+    onChange({ target: { name: 'barangay', value: '' } });
+  }
+
+  function handleProvinceChange(nextCode) {
+    setProvinceCode(nextCode);
+    const selected = provinceOptions.find((p) => p.province_code === nextCode);
+    onChange({
+      target: { name: 'province', value: selected?.province_name ?? '' },
+    });
+    onFieldTouch?.('province');
     // Reset city and barangay when province changes
     onChange({ target: { name: 'city', value: '' } });
     onChange({ target: { name: 'barangay', value: '' } });
@@ -96,6 +137,7 @@ export default function BasicInfoSection({
     onChange({
       target: { name: 'city', value: selected?.city_name ?? '' },
     });
+    onFieldTouch?.('city');
     // Reset barangay when city changes
     onChange({ target: { name: 'barangay', value: '' } });
   }
@@ -106,6 +148,7 @@ export default function BasicInfoSection({
     onChange({
       target: { name: 'barangay', value: selected?.brgy_name ?? '' },
     });
+    onFieldTouch?.('barangay');
   }
 
   return (
@@ -134,20 +177,24 @@ export default function BasicInfoSection({
         {/* Row 1: First Name / Last Name (2-col) */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
           <FormField
+            id='field-firstName'
             label='First Name (as shown on valid ID)'
             name='firstName'
             required
             value={form.firstName}
             onChange={handleChange}
+            onBlur={() => handleFieldBlur('firstName')}
             placeholder='Enter Firstname'
             error={touched.firstName ? errors.firstName : undefined}
           />
           <FormField
+            id='field-lastName'
             label='Last Name (as shown on valid ID)'
             name='lastName'
             required
             value={form.lastName}
             onChange={handleChange}
+            onBlur={() => handleFieldBlur('lastName')}
             placeholder='Enter Lastname'
             error={touched.lastName ? errors.lastName : undefined}
           />
@@ -156,17 +203,19 @@ export default function BasicInfoSection({
         {/* Row 2: Age / Gender (2-col) */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
           <FormSelect
+            id='field-age'
             label='Age'
             name='age'
             required
             value={form.age}
             onChange={handleChange}
+            onBlur={() => handleFieldBlur('age')}
             placeholder='Select your age'
             options={AGE_OPTIONS}
             error={touched.age ? errors.age : undefined}
           />
           {/* Gender Radio Buttons */}
-          <div className='flex flex-col gap-1'>
+          <div id='field-gender' className='flex flex-col gap-1 scroll-mt-24'>
             <label className='text-[#121212] mb-2 block text-[14px] font-medium font-satoshi'>
               Gender<span className='text-red-500 ml-0.5'>*</span>
             </label>
@@ -213,18 +262,20 @@ export default function BasicInfoSection({
 
         {/* Row 3: Email Address (full-width) */}
         <FormField
+          id='field-email'
           label='Email Address'
           name='email'
           type='email'
           required
           value={form.email}
           onChange={handleChange}
+          onBlur={() => handleFieldBlur('email')}
           placeholder='Enter Email Address'
           error={touched.email ? errors.email : undefined}
         />
 
         {/* Row 4: Mobile Number (full-width) with +63 prefix */}
-        <div className='flex flex-col gap-1'>
+        <div id='field-phone' className='flex flex-col gap-1 scroll-mt-24'>
           <label className='text-[#121212] mb-2 block text-[14px] font-medium font-satoshi'>
             Mobile Number<span className='text-red-500 ml-0.5'>*</span>
           </label>
@@ -239,6 +290,7 @@ export default function BasicInfoSection({
               required
               value={form.phone}
               onChange={handleChange}
+              onBlur={() => handleFieldBlur('phone')}
               placeholder='Enter mobile number'
               className={`flex-1 bg-white border border-[#ACACAC] rounded-r-[6px] px-[17px] h-[52px] text-sm text-slate-800 outline-none transition-all placeholder:text-[#ACACAC] font-satoshi focus:ring-2 focus:ring-[#C55F61] focus:ring-offset-1 ${
                 touched.phone && errors.phone
@@ -264,48 +316,70 @@ export default function BasicInfoSection({
           ) : null}
         </div>
 
-        {/* Row 5: Region / City (2-col) */}
+        {/* Row 5: Region / Province (2-col) */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
           <SearchableSelect
+            id='field-region'
             label='Region'
             required
             value={regionCode}
-            onChange={handleProvinceChange}
-            options={provinceOptions}
+            onChange={handleRegionChange}
+            onBlur={() => handleFieldBlur('region')}
+            options={regionSelectOptions}
             placeholder='Select your region'
             error={
-              touched.province && (errors.province || addressError)
-                ? errors.province || addressError
+              touched.region && (errors.region || addressError)
+                ? errors.region || addressError
                 : undefined
             }
           />
           <SearchableSelect
-            label='City'
+            id='field-province'
+            label='Province'
             required
-            value={cityCode}
-            onChange={handleCityChange}
-            options={citySelectOptions}
-            placeholder='Select your city'
+            value={provinceCode}
+            onChange={handleProvinceChange}
+            onBlur={() => handleFieldBlur('province')}
+            options={provinceSelectOptions}
+            placeholder='Select your province'
             disabled={!regionCode}
             error={
-              touched.city && errors.city ? errors.city : undefined
+              touched.province && errors.province ? errors.province : undefined
             }
           />
         </div>
 
-        {/* Row 6: Barangay (full-width) */}
-        <SearchableSelect
-          label='Barangay'
-          required
-          value={barangayCode}
-          onChange={handleBarangayChange}
-          options={barangaySelectOptions}
-          placeholder='Select your barangay'
-          disabled={!cityCode}
-          error={
-            touched.barangay && errors.barangay ? errors.barangay : undefined
-          }
-        />
+        {/* Row 6: City / Barangay (2-col) */}
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
+          <SearchableSelect
+            id='field-city'
+            label='City'
+            required
+            value={cityCode}
+            onChange={handleCityChange}
+            onBlur={() => handleFieldBlur('city')}
+            options={citySelectOptions}
+            placeholder='Select your city'
+            disabled={!provinceCode}
+            error={
+              touched.city && errors.city ? errors.city : undefined
+            }
+          />
+          <SearchableSelect
+            id='field-barangay'
+            label='Barangay'
+            required
+            value={barangayCode}
+            onChange={handleBarangayChange}
+            onBlur={() => handleFieldBlur('barangay')}
+            options={barangaySelectOptions}
+            placeholder='Select your barangay'
+            disabled={!cityCode}
+            error={
+              touched.barangay && errors.barangay ? errors.barangay : undefined
+            }
+          />
+        </div>
       </div>
     </section>
   );

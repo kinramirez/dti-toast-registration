@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 import { usePhilippineAddress } from '../hooks/usePhilippineAddress';
 import { registerEvent } from '../api/registration';
-import { getEventById } from '../api/events';
+import { getEventById, getLatestEvent } from '../api/events';
 
 import { initialForm, registrationSchema } from './EventFormPage.schema';
 import { stepTransition, buildPayload } from './EventFormPage.utils';
@@ -15,6 +15,27 @@ import TrustFooterStrip from './sections/TrustFooterStrip';
 import RegistrationStep1 from './sections/RegistrationStep1';
 import RegistrationStep2 from './sections/RegistrationStep2';
 import RegistrationSuccess from './sections/RegistrationSuccess';
+
+function extractGuid(ev) {
+  return ev?.guid ?? ev?.id ?? ev?.eventGuId ?? ev?.guId ?? null;
+}
+
+// Visual top-to-bottom order of Step 1 fields, used to pick which invalid
+// field to scroll to first when "Save & Continue" fails validation.
+const STEP1_FIELD_ORDER = [
+  'firstName', 'lastName', 'age', 'gender', 'email', 'phone',
+  'region', 'province', 'city', 'barangay',
+  'role', 'eventDate', 'occasion', 'guests', 'occasionOther',
+  'budget', 'suppliers', 'suppliersOther',
+  'lumiPromos', 'discoveryChannel', 'discoveryOther',
+];
+
+function scrollToField(fieldName) {
+  const el = document.getElementById(`field-${fieldName}`);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
 
 export default function EventFormPage({ event: propEvent, hideBackLink = false, hideViewEventButton = false }) {
   const [form, setForm] = useState(initialForm);
@@ -27,68 +48,42 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
   const navigate = useNavigate();
   const { id } = useParams();
 
-  // ── GUID Validation ──
-  // Only the Toast Wedding Fair is registrable.
-  const ALLOWED_GUID = '35e60ba5-5153-468b-853c-e22abc9521a7';
+  // ── Latest-event GUID validation ──
+  // Only the current/latest event is registrable. We resolve the latest
+  // event's GUID dynamically instead of hardcoding one.
+  const [latestEventGuid, setLatestEventGuid] = useState(null);
+  const [latestEventLoading, setLatestEventLoading] = useState(true);
+  const [latestEventLoadError, setLatestEventLoadError] = useState(false);
 
-  // If no :id param (old /event/register route), show error.
-  if (id === undefined) {
-    return (
-      <div className="relative z-10 bg-white min-h-screen flex items-center justify-center">
-        <div className="text-center px-6 py-16 max-w-md">
-          <h2 className="text-2xl font-bold text-[#5D5D5D] mb-3 font-satoshi">
-            No Event Specified
-          </h2>
-          <p className="text-[#737373] text-sm leading-relaxed font-satoshi mb-6">
-            Please use a valid registration link to access this page.
-          </p>
-          <button
-            onClick={() => navigate('/event', { replace: true })}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200"
-            style={{
-              background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
-              textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
-            }}
-          >
-            Browse Events
-          </button>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    let cancelled = false;
+    setLatestEventLoading(true);
+    setLatestEventLoadError(false);
 
-  // If :id does not match the allowed GUID, show error.
-  if (id !== ALLOWED_GUID) {
-    return (
-      <div className="relative z-10 bg-white min-h-screen flex items-center justify-center">
-        <div className="text-center px-6 py-16 max-w-md">
-          <h2 className="text-2xl font-bold text-[#5D5D5D] mb-3 font-satoshi">
-            Invalid Event Link
-          </h2>
-          <p className="text-[#737373] text-sm leading-relaxed font-satoshi mb-6">
-            This registration link is not valid. Please use the correct link
-            provided for the event.
-          </p>
-          <button
-            onClick={() => navigate('/event', { replace: true })}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200"
-            style={{
-              background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
-              textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
-            }}
-          >
-            Browse Events
-          </button>
-        </div>
-      </div>
-    );
-  }
+    getLatestEvent()
+      .then((ev) => {
+        if (cancelled) return;
+        setLatestEventGuid(extractGuid(ev));
+        setLatestEventLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch latest event:', err);
+        if (cancelled) return;
+        setLatestEventLoadError(true);
+        setLatestEventLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  const isIdValid = !latestEventLoading && !latestEventLoadError
+    && id !== undefined && id === latestEventGuid;
 
   // Fetch event by ID when location.state is missing (direct URL / bookmark / refresh)
   const [fetchedEvent, setFetchedEvent] = useState(null);
 
   useEffect(() => {
-    if (location.state?.event || !id) return;
+    if (location.state?.event || !id || !isIdValid) return;
 
     let cancelled = false;
     getEventById(id)
@@ -100,18 +95,21 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
       });
 
     return () => { cancelled = true; };
-  }, [id, location.state?.event]);
+  }, [id, location.state?.event, isIdValid]);
 
   const event = location.state?.event ?? fetchedEvent ?? propEvent;
   const eventGuId = id ?? event?.guid ?? event?.id ?? event?.eventGuId ?? event?.guId;
   const {
     regionCode,
     setRegionCode,
+    provinceCode,
+    setProvinceCode,
     cityCode,
     setCityCode,
     barangayCode,
     setBarangayCode,
     regionOptions,
+    provinceOptions,
     cityOptions,
     barangayOptions,
     addressError,
@@ -126,6 +124,7 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
       gender: form.gender,
       email: form.email,
       phone: form.phone,
+      region: form.region,
       province: form.province,
       city: form.city,
       barangay: form.barangay,
@@ -170,10 +169,10 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
       form.email, form.phone, form.company, form.position,
       form.role, form.eventDate, form.occasion, form.guests, form.budget,
       form.specificSuppliers, form.lumiPromos, form.discoveryChannel,
-      form.discoveryOther, form.province, form.city, form.barangay,
+      form.discoveryOther, form.region, form.province, form.city, form.barangay,
       form.occasionOther, form.suppliersOther,
     ];
-    return nonEmptyFields.some((v) => v !== '' && v !== 'Male')
+    return nonEmptyFields.some((v) => v !== '')
       || (Array.isArray(form.suppliers) && form.suppliers.length > 0);
   }, [form]);
 
@@ -183,6 +182,13 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+  }
+
+  // Marks a single field as touched — used for per-field blur/selection
+  // validation, so errors like "Please enter a valid email address."
+  // appear as soon as the user leaves that field, not only on submit.
+  function onFieldTouch(fieldName) {
+    setTouched((prev) => ({ ...prev, [fieldName]: true }));
   }
 
   // Step 1 → Step 2 (no confirmation modal)
@@ -196,6 +202,7 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
       gender: true,
       email: true,
       phone: true,
+      region: true,
       province: true,
       city: true,
       barangay: true,
@@ -209,6 +216,7 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
       discoveryChannel: true,
       ...(form.occasion === 'Other' ? { occasionOther: true } : {}),
       ...(form.suppliers.includes('Other') ? { suppliersOther: true } : {}),
+      ...(form.discoveryChannel === 'Other' ? { discoveryOther: true } : {}),
     }));
 
     const result = registrationSchema.safeParse({
@@ -218,6 +226,7 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
       gender: form.gender,
       email: form.email,
       phone: form.phone,
+      region: form.region,
       province: form.province,
       city: form.city,
       barangay: form.barangay,
@@ -240,6 +249,13 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
     if (result.success) {
       setStep(2);
       window.scrollTo(0, 0);
+    } else {
+      const invalidFields = new Set(result.error.issues.map((issue) => issue.path[0]));
+      const firstInvalidField = STEP1_FIELD_ORDER.find((f) => invalidFields.has(f));
+      // Defer to the next tick so the error text (which depends on the
+      // `touched` state update above) has rendered and pushed layout
+      // before we measure scroll position.
+      setTimeout(() => scrollToField(firstInvalidField), 0);
     }
   }
 
@@ -268,6 +284,7 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
       gender: form.gender,
       email: form.email,
       phone: form.phone,
+      region: form.region,
       province: form.province,
       city: form.city,
       barangay: form.barangay,
@@ -338,6 +355,71 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
     navigate('/event', { replace: true });
   }
 
+  // ── Guard screens (rendered after all hooks have run) ──
+
+  if (id === undefined) {
+    return (
+      <div className="relative z-10 bg-white min-h-screen flex items-center justify-center">
+        <div className="text-center px-6 py-16 max-w-md">
+          <h2 className="text-2xl font-bold text-[#5D5D5D] mb-3 font-satoshi">
+            No Event Specified
+          </h2>
+          <p className="text-[#737373] text-sm leading-relaxed font-satoshi mb-6">
+            Please use a valid registration link to access this page.
+          </p>
+          <button
+            onClick={() => navigate('/event', { replace: true })}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200"
+            style={{
+              background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
+              textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
+            }}
+          >
+            Browse Events
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (latestEventLoading) {
+    return (
+      <div className="relative z-10 bg-white min-h-screen flex items-center justify-center">
+        <div className="flex items-center justify-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-[#C55F61] animate-bounce [animation-delay:-0.2s]" />
+          <span className="h-2 w-2 rounded-full bg-[#C55F61] animate-bounce [animation-delay:-0.1s]" />
+          <span className="h-2 w-2 rounded-full bg-[#C55F61] animate-bounce" />
+        </div>
+      </div>
+    );
+  }
+
+  if (latestEventLoadError || !isIdValid) {
+    return (
+      <div className="relative z-10 bg-white min-h-screen flex items-center justify-center">
+        <div className="text-center px-6 py-16 max-w-md">
+          <h2 className="text-2xl font-bold text-[#5D5D5D] mb-3 font-satoshi">
+            Invalid Event Link
+          </h2>
+          <p className="text-[#737373] text-sm leading-relaxed font-satoshi mb-6">
+            This registration link is not valid. Please use the correct link
+            provided for the event.
+          </p>
+          <button
+            onClick={() => navigate('/event', { replace: true })}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-white font-satoshi font-medium text-sm transition-all duration-200"
+            style={{
+              background: 'linear-gradient(180deg, #F57E80 0%, #C55F61 100%)',
+              textShadow: '0px 1px 2px rgba(0, 0, 0, 0.15)',
+            }}
+          >
+            Browse Events
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className='relative z-10 bg-white'>
       {/* ── Hero Band (Steps 1 & 2 only; Step 3 has its own hero) ── */}
@@ -357,17 +439,22 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
                   >
                     <RegistrationStep1
                       form={form}
+                      event={event}
                       onChange={onChange}
+                      onFieldTouch={onFieldTouch}
                       errors={step1Errors}
                       touched={touched}
                       onNext={handleNextStep1}
                       regionCode={regionCode}
                       setRegionCode={setRegionCode}
+                      provinceCode={provinceCode}
+                      setProvinceCode={setProvinceCode}
                       cityCode={cityCode}
                       setCityCode={setCityCode}
                       barangayCode={barangayCode}
                       setBarangayCode={setBarangayCode}
                       regionOptions={regionOptions}
+                      provinceOptions={provinceOptions}
                       cityOptions={cityOptions}
                       barangayOptions={barangayOptions}
                       addressError={addressError}
@@ -396,8 +483,8 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
             </div>
 
             {/* Right: Sidebar */}
-            {step === 1 && <RegistrationSidebar />}
-            {step === 2 && <RegistrationSidebar showWhyRegister={false} />}
+            {step === 1 && <RegistrationSidebar event={event} />}
+            {step === 2 && <RegistrationSidebar event={event} showWhyRegister={false} />}
           </div>
 
           {/* ── Trust Footer Strip ── */}

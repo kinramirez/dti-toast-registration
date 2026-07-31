@@ -9,8 +9,16 @@ import { RequiredMark } from './FormField';
  *
  * Used for cascading address dropdowns (Region → City → Barangay).
  * Not used by Step 1, but extracted for future steps.
+ *
+ * `onBlur` (optional) fires whenever the dropdown actually closes — either
+ * because an option was selected, or because focus moved elsewhere without
+ * a selection — so callers can mark the field touched for validation.
+ *
+ * `id` (optional) is applied to the outer wrapper div, used as a scroll
+ * target when jumping to the first invalid field on submit.
  */
 export default function SearchableSelect({
+  id,
   label,
   required,
   options,
@@ -18,6 +26,7 @@ export default function SearchableSelect({
   error,
   value,
   onChange,
+  onBlur,
   disabled,
 }) {
   const [open, setOpen] = useState(false);
@@ -36,18 +45,21 @@ export default function SearchableSelect({
     onChange(optValue);
     setQuery('');
     setOpen(false);
+    onBlur?.();
   }
 
   function handleBlur(e) {
     if (!containerRef.current?.contains(e.relatedTarget)) {
       setOpen(false);
       setQuery('');
+      onBlur?.();
     }
   }
 
   return (
     <div
-      className='flex flex-col gap-1'
+      id={id}
+      className='flex flex-col gap-1 scroll-mt-24'
       ref={containerRef}
       onBlur={handleBlur}
     >

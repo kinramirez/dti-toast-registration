@@ -4,10 +4,12 @@ import { barangays, cities, provinces, regions } from 'select-philippines-addres
 
 export function usePhilippineAddress() {
   const [regionCode, setRegionCodeState] = useState('')
+  const [provinceCode, setProvinceCodeState] = useState('')
   const [cityCode, setCityCodeState] = useState('')
   const [barangayCode, setBarangayCodeState] = useState('')
 
   const [regionOptions, setRegionOptions] = useState([])
+  const [provinceOptions, setProvinceOptions] = useState([])
   const [cityOptions, setCityOptions] = useState([])
   const [barangayOptions, setBarangayOptions] = useState([])
 
@@ -15,6 +17,17 @@ export function usePhilippineAddress() {
 
   function setRegionCode(nextCode) {
     setRegionCodeState(nextCode)
+    setProvinceCodeState('')
+    setCityCodeState('')
+    setBarangayCodeState('')
+    setProvinceOptions([])
+    setCityOptions([])
+    setBarangayOptions([])
+    setAddressError(null)
+  }
+
+  function setProvinceCode(nextCode) {
+    setProvinceCodeState(nextCode)
     setCityCodeState('')
     setBarangayCodeState('')
     setCityOptions([])
@@ -34,6 +47,7 @@ export function usePhilippineAddress() {
     setAddressError(null)
   }
 
+  // Regions (top-level, loaded once)
   useEffect(() => {
     let cancelled = false
 
@@ -55,30 +69,40 @@ export function usePhilippineAddress() {
     }
   }, [])
 
+  // Provinces (depends on region)
   useEffect(() => {
     let cancelled = false
 
     if (!regionCode) return () => {}
 
     provinces(regionCode)
-      .then(async (provinceList) => {
+      .then((list) => {
         if (cancelled) return
-
-        const provinceArray = Array.isArray(provinceList) ? provinceList : []
-        const cityLists = await Promise.all(
-          provinceArray.map(async (province) => {
-            const cityList = await cities(province.province_code)
-            const cityArray = Array.isArray(cityList) ? cityList : []
-            return cityArray.map((city) => ({
-              ...city,
-              province_code: province.province_code,
-              province_name: province.province_name,
-            }))
-          }),
-        )
-
+        setProvinceOptions(Array.isArray(list) ? list : [])
+        setAddressError(null)
+      })
+      .catch((error) => {
         if (cancelled) return
-        setCityOptions(cityLists.flat())
+        setProvinceOptions([])
+        setAddressError('Could not load province data. Please try again later.')
+        console.error('Failed to fetch provinces:', error)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [regionCode])
+
+  // Cities (depends on province)
+  useEffect(() => {
+    let cancelled = false
+
+    if (!provinceCode) return () => {}
+
+    cities(provinceCode)
+      .then((list) => {
+        if (cancelled) return
+        setCityOptions(Array.isArray(list) ? list : [])
         setAddressError(null)
       })
       .catch((error) => {
@@ -91,8 +115,9 @@ export function usePhilippineAddress() {
     return () => {
       cancelled = true
     }
-  }, [regionCode])
+  }, [provinceCode])
 
+  // Barangays (depends on city)
   useEffect(() => {
     let cancelled = false
 
@@ -119,11 +144,14 @@ export function usePhilippineAddress() {
   return {
     regionCode,
     setRegionCode,
+    provinceCode,
+    setProvinceCode,
     cityCode,
     setCityCode,
     barangayCode,
     setBarangayCode,
     regionOptions,
+    provinceOptions,
     cityOptions,
     barangayOptions,
     addressError,

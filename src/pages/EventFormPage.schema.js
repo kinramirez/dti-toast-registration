@@ -5,7 +5,7 @@ export const initialForm = {
   firstName: '',
   lastName: '',
   age: '',
-  gender: 'Male',
+  gender: '',
 
   // Contact Information
   email: '',
@@ -50,7 +50,9 @@ export const registrationSchema = z.object({
   firstName: z.string().trim().min(1, 'First name is required.'),
   lastName: z.string().trim().min(1, 'Last name is required.'),
   age: z.string().min(1, 'Please select your age.'),
-  gender: z.enum(['Male', 'Female']),
+  gender: z.enum(['Male', 'Female'], {
+    errorMap: () => ({ message: 'Please select your gender.' }),
+  }),
   email: z
     .string()
     .trim()
@@ -99,6 +101,13 @@ export const registrationSchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ['suppliersOther'],
       message: 'Please specify other suppliers.',
+    });
+  }
+  if (data.discoveryChannel === 'Other' && !data.discoveryOther?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['discoveryOther'],
+      message: 'Please specify how you heard about the event.',
     });
   }
 });

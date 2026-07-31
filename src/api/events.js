@@ -50,3 +50,30 @@ export async function getEventById(eventGuid) {
   }
   return normalizeEvent(event);
 }
+
+// Returns the soonest-upcoming event, in the same raw shape getEvents()
+// returns (title/startDate/endDate/location/guid) — deliberately NOT
+// passed through normalizeEvent, since that's built for getEventById's
+// single-event shape and was stripping/renaming the fields the
+// registration page's header (and EventCard) rely on directly.
+export async function getLatestEvent() {
+  const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+  const { events } = await getEvents({
+    page: 1,
+    limit: 100,
+    startDateFrom: todayStr,
+  });
+
+  if (!Array.isArray(events) || events.length === 0) {
+    return null;
+  }
+
+  const sorted = [...events].sort((a, b) => {
+    const aDate = new Date(a.startDate ?? a.eventDate ?? a.date);
+    const bDate = new Date(b.startDate ?? b.eventDate ?? b.date);
+    return aDate - bDate;
+  });
+
+  return sorted[0];
+}

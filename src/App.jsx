@@ -1,6 +1,6 @@
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import './App.css'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import Footer from './components/Footer'
 import Header from './components/Header'
@@ -9,6 +9,7 @@ import ContactUs from './pages/ContactUs'
 import EventFormPage from './pages/EventFormPage'
 import EventPage from './pages/EventPage'
 import EventDetailsPage from './pages/EventDetailsPage'
+import { getLatestEvent } from './api/events'
 
 function ScrollBehavior() {
   const { pathname, hash } = useLocation()
@@ -25,6 +26,60 @@ function ScrollBehavior() {
   }, [pathname, hash])
 
   return null
+}
+
+// Resolves the latest upcoming event and redirects to its registration
+// page. Used for '/' and any unmatched route instead of a hardcoded GUID.
+function LatestEventRedirect() {
+  const navigate = useNavigate()
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    getLatestEvent()
+      .then((event) => {
+        if (cancelled) return
+        const guid = event?.guid ?? event?.id ?? event?.eventGuId ?? event?.guId
+        if (guid) {
+          navigate(`/event/register/${guid}`, { replace: true })
+        } else {
+          setFailed(true)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to resolve latest event for redirect:', err)
+        if (!cancelled) setFailed(true)
+      })
+
+    return () => { cancelled = true }
+  }, [navigate])
+
+  if (failed) {
+    return (
+      <div className="relative z-10 bg-white min-h-screen flex items-center justify-center">
+        <div className="text-center px-6 py-16 max-w-md">
+          <h2 className="text-2xl font-bold text-[#5D5D5D] mb-3 font-satoshi">
+            No Events Available
+          </h2>
+          <p className="text-[#737373] text-sm leading-relaxed font-satoshi">
+            Please check back soon.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Brief loading state while the latest event resolves
+  return (
+    <div className="relative z-10 bg-white min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center gap-2">
+        <span className="h-2 w-2 rounded-full bg-[#C55F61] animate-bounce [animation-delay:-0.2s]" />
+        <span className="h-2 w-2 rounded-full bg-[#C55F61] animate-bounce [animation-delay:-0.1s]" />
+        <span className="h-2 w-2 rounded-full bg-[#C55F61] animate-bounce" />
+      </div>
+    </div>
+  )
 }
 
 function AppFrame() {
@@ -57,12 +112,12 @@ function AppFrame() {
       <ScrollBehavior />
       <main className="appMain">
         <Routes>
-          <Route path="/" element={<Navigate to="/event/register/35e60ba5-5153-468b-853c-e22abc9521a7" replace />} />
+          <Route path="/" element={<LatestEventRedirect />} />
           <Route path="/event/register" element={<EventFormPage />} />
           <Route path="/event/register/:id" element={<EventFormPage />} />
           <Route path="/event/:id" element={<EventDetailsPage />} />
           <Route path="/contact" element={<ContactUs />} />
-          <Route path="*" element={<Navigate to="/event/register/35e60ba5-5153-468b-853c-e22abc9521a7" replace />} />
+          <Route path="*" element={<LatestEventRedirect />} />
         </Routes>
       </main>
       {!isEventRegisterPage && <Footer />}

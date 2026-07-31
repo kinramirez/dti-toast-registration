@@ -7,6 +7,8 @@ import { RequiredMark } from './FormField';
  * Supports:
  * - `placeholder`, `options` (array of { value, label } or strings), `error`, `required`, `disabled`
  * - Custom SVG chevron positioned right-4
+ * - `id` (optional) applied to the outer wrapper div, used as a scroll
+ *   target when jumping to the first invalid field on submit
  *
  * Styling matches the Step 1 design spec:
  * - Select: bg-[#F1F1F1], border-none, rounded-lg, pl-5 pr-10 py-4
@@ -18,6 +20,7 @@ import { RequiredMark } from './FormField';
  * - Disabled: disabled:cursor-not-allowed disabled:opacity-60
  */
 export default function FormSelect({
+  id,
   label,
   required,
   options,
@@ -30,7 +33,7 @@ export default function FormSelect({
   const isDisabled = Boolean(props.disabled);
 
   return (
-    <div className='flex flex-col gap-1'>
+    <div id={id} className='flex flex-col gap-1 scroll-mt-24'>
       <label className='text-[#121212] mb-2 block text-[14px] font-medium font-satoshi'>
         {label}
         {required && <RequiredMark />}
