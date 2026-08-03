@@ -134,7 +134,7 @@ export default function EventFormPage() {
       form.discoveryOther, form.region, form.province, form.city, form.barangay,
       form.occasionOther, form.suppliersOther,
     ];
-    return nonEmptyFields.some((v) => v !== '' && v !== 'Male')
+    return nonEmptyFields.some((v) => v !== '')
       || (Array.isArray(form.suppliers) && form.suppliers.length > 0);
   }, [form]);
 

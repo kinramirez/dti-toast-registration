@@ -5,7 +5,7 @@ export const initialForm = {
   firstName: '',
   lastName: '',
   age: '',
-  gender: 'Male',
+  gender: '',
 
   // Contact Information
   email: '',
