@@ -3,11 +3,8 @@ import './App.css'
 import { useEffect, useState } from 'react'
 
 import Footer from './components/Footer'
-import Header from './components/Header'
-import EventsHeader from './components/EventsHeader'
 import ContactUs from './pages/ContactUs'
 import EventFormPage from './pages/EventFormPage'
-import EventPage from './pages/EventPage'
 import EventDetailsPage from './pages/EventDetailsPage'
 import { getLatestEvent } from './api/events'
 
@@ -100,16 +97,6 @@ function AppFrame() {
 
   return (
     <div className="appShell">
-      
-      {!isEventRegisterPage && (isEventPage ? (
-        <EventsHeader
-          title={getTitle()}
-          breadcrumb={undefined}
-        />
-      ) : (
-        <Header />
-      ))}
-      <ScrollBehavior />
       <main className="appMain">
         <Routes>
           <Route path="/" element={<LatestEventRedirect />} />

@@ -1,20 +1,10 @@
 import { Ticket, SquareChartGantt, Trophy, Lightbulb } from 'lucide-react';
 
+import { formatDate } from '@/lib/utils/eventUtils';
+
 /**
  * RegistrationSidebar — Right sidebar with Reminder card and "Why Register?" card.
- *
- * Design spec §2.10–2.11, §4.11–4.12:
- * - Width: 532px
- * - Stacked cards with 32px gap
- *
- * Reminder Card (532×360px):
- * - White bg, shadow: 0px 9px 4px 1px rgba(18,18,18,0.05)
- * - Heading: "Reminder" — Cormorant Garamond 28px, rose
- * - Body + warning text (moved from old RegistrationStep1 disclaimers)
- *
- * "Why Register?" Card (532×256px):
- * - Background: rgba(197,95,97,0.2), shadow: 0px 6px 4px rgba(18,18,18,0.15)
- * - 2×2 icon grid with circular outline icons + bold rose label + gray description
+ * ...
  */
 
 const WHY_REGISTER_ITEMS = [
@@ -40,7 +30,11 @@ const WHY_REGISTER_ITEMS = [
   },
 ];
 
-export default function RegistrationSidebar({ showWhyRegister = true }) {
+export default function RegistrationSidebar({ event, showWhyRegister = true }) {
+  const dateStr = event?.startDate
+    ? `${formatDate(event.startDate)}${event.endDate ? ` - ${formatDate(event.endDate)}` : ''}`
+    : '';
+
   return (
     <aside className='w-full lg:w-[532px] flex-shrink-0 flex flex-col gap-8'>
       {/* ── Reminder Card ── */}
@@ -57,7 +51,7 @@ export default function RegistrationSidebar({ showWhyRegister = true }) {
           Reminder
         </h3>
         <p className='text-[16px] text-brand-dark leading-relaxed mb-4'>
-          Free Entrance for those who register now until August 8-9, 2026, 5PM.
+          Free Entrance for those who register now until {dateStr}!
           Submission of this form confirms that you agree to receive updates 
           about Toast Wedding Fair! If you receive the form auto reply, it means 
           we have received your form and you are guaranteed
