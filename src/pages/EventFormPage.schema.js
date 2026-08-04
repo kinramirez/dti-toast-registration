@@ -71,8 +71,8 @@ export const registrationSchema = z.object({
   barangay: z.string().min(1, 'Please select your barangay.'),
 
   // Organization/Company
-  company: z.string().optional(),
-  position: z.string().optional(),
+  company: z.string().trim().min(1, 'Company is required.'),
+  position: z.string().trim().min(1, 'Job position is required.'),
 
   // Purpose of Visit
   role: z.string().min(1, 'Please select your role.'),

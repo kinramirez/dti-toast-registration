@@ -161,6 +161,8 @@ export default function EventFormPage() {
       province: true,
       city: true,
       barangay: true,
+      company: true,
+      position: true,
       role: true,
       eventDate: true,
       occasion: true,
@@ -271,7 +273,15 @@ export default function EventFormPage() {
       window.scrollTo(0, 0);
     } catch (error) {
       console.error(error);
-      setSubmitError('Registration failed. Please try again.');
+
+      const serverMessage = error?.response?.data?.message ?? '';
+      const isDuplicateEmail = /already registered/i.test(serverMessage);
+
+      setSubmitError(
+        isDuplicateEmail
+          ? 'Use another email, the email you used is already registered.'
+          : 'Registration failed. Please try again.'
+      );
     } finally {
       setIsSubmitting(false);
     }

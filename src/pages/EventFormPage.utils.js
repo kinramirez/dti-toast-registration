@@ -19,8 +19,8 @@ export function buildPayload(form, eventGuId) {
     gender: form.gender,
     email: form.email.trim(),
     mobileNumber: form.phone,
-    company: form.company.trim() || null,
-    position: form.position.trim() || null,
+    company: form.company.trim(),
+    position: form.position.trim(),
     // Purpose fields
     myRoleInOccasion: form.role,
     eventDate: form.eventDate,

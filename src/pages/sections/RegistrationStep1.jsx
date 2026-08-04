@@ -28,7 +28,7 @@ const FIELD_ORDER = [
   'province',
   'city',
   'barangay',
-  // Organization/Company (optional fields, kept for completeness)
+  // Organization/Company 
   'company',
   'position',
   // Purpose of Visit
@@ -248,6 +248,8 @@ export default function RegistrationStep1({
         <OrganizationSection
           form={form}
           onChange={onChange}
+          errors={errors}
+          touched={touched}
           registerField={registerField}
         />
 
