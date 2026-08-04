@@ -9,7 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { formatDate, formatTime } from '@/lib/utils/eventUtils';
+import { formatDate, formatTime, parseDateAsLocal } from '@/lib/utils/eventUtils';
 
 const DESCRIPTION_LIMIT = 200;
 
@@ -34,8 +34,8 @@ const EventOverviewCard = ({ event }) => {
   // Compute day-of-week labels
   const getDayLabel = (dateStr) => {
     if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return '';
+    const d = parseDateAsLocal(dateStr);
+    if (!d) return '';
     return d.toLocaleDateString('en-US', { weekday: 'long' });
   };
   const startDay = getDayLabel(event?.startDate);

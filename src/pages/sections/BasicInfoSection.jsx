@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { User } from 'lucide-react';
 
 import FormField from '@/components/ui/FormField';
@@ -31,6 +32,15 @@ const AGE_OPTIONS = [
  * selects mark themselves touched onBlur, radio/checkbox groups and the
  * region/province/city/barangay selects mark themselves touched as soon
  * as a selection is made, via `onFieldTouch(fieldName)`.
+ *
+ * Address sync: `form.region`/`form.province` are kept in sync with
+ * `regionCode`/`provinceCode` via useEffect, rather than only inside the
+ * individual handlers. This matters because `provinceCode`/`regionCode`
+ * can also change indirectly — e.g. picking a City directly (without a
+ * Province first) causes usePhilippineAddress to back-fill provinceCode
+ * and regionCode internally. The effects below catch that case too,
+ * since they react to the code values themselves, not to which handler
+ * triggered the change.
  *
  * Props:
  * @param {object} form - All form field values
@@ -113,7 +123,14 @@ export default function BasicInfoSection({
       target: { name: 'region', value: selected?.region_name ?? '' },
     });
     onFieldTouch?.('region');
-    // Reset province, city, barangay when region changes
+
+    // Reset descendant codes AND their display values when region changes,
+    // so a stale provinceCode/cityCode/barangayCode from the previous
+    // region can never linger and get matched against the new region's
+    // option list.
+    setProvinceCode('');
+    setCityCode('');
+    setBarangayCode('');
     onChange({ target: { name: 'province', value: '' } });
     onChange({ target: { name: 'city', value: '' } });
     onChange({ target: { name: 'barangay', value: '' } });
@@ -126,7 +143,10 @@ export default function BasicInfoSection({
       target: { name: 'province', value: selected?.province_name ?? '' },
     });
     onFieldTouch?.('province');
-    // Reset city and barangay when province changes
+
+    // Reset descendant codes when province changes
+    setCityCode('');
+    setBarangayCode('');
     onChange({ target: { name: 'city', value: '' } });
     onChange({ target: { name: 'barangay', value: '' } });
   }
@@ -138,7 +158,14 @@ export default function BasicInfoSection({
       target: { name: 'city', value: selected?.city_name ?? '' },
     });
     onFieldTouch?.('city');
-    // Reset barangay when city changes
+
+    // Reset barangay when city changes. Note: provinceCode/regionCode are
+    // intentionally NOT reset here — usePhilippineAddress is responsible
+    // for back-filling them when a City is picked without a Province
+    // first (e.g. NCR, or a user who knows their city but not province).
+    // The useEffect hooks below sync form.province/form.region once the
+    // hook derives those codes.
+    setBarangayCode('');
     onChange({ target: { name: 'barangay', value: '' } });
   }
 
@@ -150,6 +177,24 @@ export default function BasicInfoSection({
     });
     onFieldTouch?.('barangay');
   }
+
+  // Keep form.province in sync with provinceCode, regardless of what
+  // caused provinceCode to change (direct selection, or derived by the
+  // hook after a City was picked without a Province first).
+  useEffect(() => {
+    const selected = provinceOptions.find((p) => p.province_code === provinceCode);
+    onChange({
+      target: { name: 'province', value: selected?.province_name ?? '' },
+    });
+  }, [provinceCode, provinceOptions]);
+
+  // Keep form.region in sync with regionCode, same reasoning as above.
+  useEffect(() => {
+    const selected = regionOptions.find((r) => r.region_code === regionCode);
+    onChange({
+      target: { name: 'region', value: selected?.region_name ?? '' },
+    });
+  }, [regionCode, regionOptions]);
 
   return (
     <section id='basicInfo' className='mb-[34px]'>
@@ -360,7 +405,7 @@ export default function BasicInfoSection({
             onBlur={() => handleFieldBlur('city')}
             options={citySelectOptions}
             placeholder='Select your city'
-            disabled={!provinceCode}
+            disabled={!regionCode}
             error={
               touched.city && errors.city ? errors.city : undefined
             }

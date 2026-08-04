@@ -2,7 +2,7 @@ import React from 'react';
 import { Star, ArrowRight, MapPin, Clock, Calendar, SquareUser, UsersRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import dtiLogo from '@/assets/dtilogo.png';
-import { formatDate, formatTime } from '@/lib/utils/eventUtils';
+import { formatDate, formatTime, parseDateAsLocal } from '@/lib/utils/eventUtils';
 
 const RegisterButton = ({ className, onClick }) => (
   <button
@@ -42,8 +42,9 @@ const FeaturedEvent = ({ event }) => {
   // Format date range with day names
   const formatDateRange = () => {
     if (!event.startDate) return '';
-    const start = new Date(event.startDate);
-    const end = event.endDate ? new Date(event.endDate) : null;
+    const start = parseDateAsLocal(event.startDate);
+    const end = event.endDate ? parseDateAsLocal(event.endDate) : null;
+    if (!start) return '';
 
     const startFormatted = start.toLocaleDateString('en-US', {
       month: 'long',

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { REGIONS_WITHOUT_PROVINCES } from '@/hooks/usePhilippineAddress'; // adjust path to your actual hook location
 
 export const initialForm = {
   // Basic Information
@@ -64,7 +65,13 @@ export const registrationSchema = z.object({
       /^9\d{9}$/,
       'Please enter a valid 10-digit number starting with 9 (e.g., 9123456789).',
     ),
-  province: z.string().min(1, 'Please select your region.'),
+
+  // Address — region is always required. Province is required EXCEPT for
+  // regions with no provinces at all (currently just NCR — see
+  // REGIONS_WITHOUT_PROVINCES in usePhilippineAddress.js). Enforced in
+  // superRefine below since it depends on the region value.
+  region: z.string().min(1, 'Please select your region.'),
+  province: z.string().optional(),
   city: z.string().min(1, 'Please select your city.'),
   barangay: z.string().min(1, 'Please select your barangay.'),
 
@@ -87,6 +94,16 @@ export const registrationSchema = z.object({
     .min(1, 'Please select how you heard about the event.'),
   discoveryOther: z.string().optional(),
 }).superRefine((data, ctx) => {
+  const regionHasNoProvinces = REGIONS_WITHOUT_PROVINCES.has(data.region);
+
+  if (!regionHasNoProvinces && !data.province?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['province'],
+      message: 'Please select your province.',
+    });
+  }
+
   if (data.occasion === 'Other' && !data.occasionOther?.trim()) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

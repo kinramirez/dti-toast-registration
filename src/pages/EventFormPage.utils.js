@@ -37,7 +37,7 @@ export function buildPayload(form, eventGuId) {
     locationOther: '',
     consent: form.consent,
     address: form.address || fullName,
-    region: form.region || form.province,
+    region: form.region,
     barangay: form.barangay || '',
     contactNumber: form.phone,
     purpose: form.purpose,

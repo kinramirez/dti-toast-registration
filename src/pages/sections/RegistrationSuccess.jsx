@@ -241,8 +241,8 @@ function RegisteredEventCard({ event, hideViewButton = false }) {
   // Day-of-week labels
   const getDayLabel = (dateStr) => {
     if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return '';
+    const d = parseDateAsLocal(dateStr);
+    if (!d) return '';
     return d.toLocaleDateString('en-US', { weekday: 'long' });
   };
   const startDay = getDayLabel(event.startDate);
