@@ -25,7 +25,6 @@ export const initialForm = {
   occasionOther: '',
   suppliersOther: '',
   specificSuppliers: '',
-  lumiPromos: '',
   discoveryChannel: '',
   discoveryOther: '',
   province: '',
@@ -44,7 +43,7 @@ export const initialForm = {
   agreed: false,
 };
 
-// Merged validation schema for all 24 Step 1 fields
+// Merged validation schema for all Step 1 fields
 export const registrationSchema = z.object({
   // Basic Information
   firstName: z.string().trim().min(1, 'First name is required.'),
@@ -70,8 +69,8 @@ export const registrationSchema = z.object({
   barangay: z.string().min(1, 'Please select your barangay.'),
 
   // Organization/Company
-  company: z.string().optional(),
-  position: z.string().optional(),
+  company: z.string().trim().min(1, 'Company is required.'),
+  position: z.string().trim().min(1, 'Job position is required.'),
 
   // Purpose of Visit
   role: z.string().min(1, 'Please select your role.'),
@@ -83,7 +82,6 @@ export const registrationSchema = z.object({
   occasionOther: z.string().optional(),
   suppliersOther: z.string().optional(),
   specificSuppliers: z.string().optional(),
-  lumiPromos: z.string().min(1, 'Please select your Lumi Candles preference.'),
   discoveryChannel: z
     .string()
     .min(1, 'Please select how you heard about the event.'),

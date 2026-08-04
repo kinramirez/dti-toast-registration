@@ -7,20 +7,28 @@ import FormField from '@/components/ui/FormField';
  *
  * Design spec §2.6:
  * - Section header: Building2 icon badge + "Organization/Company Information" + subtitle
- * - Fields: company, position (2-col)
+ * - Fields: company, position (2-col), both required
  *
  * Props:
  * @param {object} form - All form field values
  * @param {function} onChange - Generic field change handler
+ * @param {function} onFieldTouch - Marks a field as touched on blur
  * @param {object} errors - Validation errors
  * @param {object} touched - Per-field touched state
  */
 export default function OrganizationSection({
   form,
   onChange,
+  onFieldTouch,
+  errors,
+  touched,
 }) {
   function handleChange(e) {
     onChange(e);
+  }
+
+  function handleBlur(name) {
+    onFieldTouch?.(name);
   }
 
   return (
@@ -46,20 +54,30 @@ export default function OrganizationSection({
 
       {/* Fields: Company / Job Position (2-col) */}
       <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
-        <FormField
-          label='Company'
-          name='company'
-          value={form.company}
-          onChange={handleChange}
-          placeholder='Enter your company'
-        />
-        <FormField
-          label='Job Position'
-          name='position'
-          value={form.position}
-          onChange={handleChange}
-          placeholder='Enter your job position'
-        />
+        <div id='field-company'>
+          <FormField
+            label='Company'
+            name='company'
+            required
+            value={form.company}
+            onChange={handleChange}
+            onBlur={() => handleBlur('company')}
+            placeholder='Enter your company'
+            error={touched?.company ? errors?.company : undefined}
+          />
+        </div>
+        <div id='field-position'>
+          <FormField
+            label='Job Position'
+            name='position'
+            required
+            value={form.position}
+            onChange={handleChange}
+            onBlur={() => handleBlur('position')}
+            placeholder='Enter your job position'
+            error={touched?.position ? errors?.position : undefined}
+          />
+        </div>
       </div>
     </section>
   );

@@ -55,12 +55,6 @@ const BUDGET_OPTIONS = [
   'PHP 3,000,000 and above',
 ];
 
-const LUMI_OPTIONS = [
-  'Yes, send me discounts & promos',
-  'No, not right now',
-  'Maybe later',
-];
-
 const DISCOVERY_OPTIONS = [
   'Toast Wedding Fair Instagram',
   'Toast Wedding Fair Facebook',
@@ -110,11 +104,14 @@ const SUPPLIERS_OPTIONS = [
  * Design spec §2.7:
  * - Section header: Handshake icon badge + "Purpose of Visit" + subtitle
  * - Fields: role, eventDate, occasion, guests, budget, suppliers checklist,
- *   specificSuppliers, lumiPromos, discoveryChannel (2-col grid), discoveryOther
+ *   specificSuppliers, discoveryChannel (2-col grid), discoveryOther
  *
  * Every field carries `id="field-<schemaKey>"` so EventFormPage can
  * scroll to the first invalid field when "Save & Continue" is clicked.
  *
+ * - The conditional "Please specify" field for Occasion is nested directly
+ *   under the Occasion select (inside the same grid column) so it always
+ *   appears immediately below Occasion, not below the whole 2-col row.
  * - The "Other" text field under the discovery-channel grid is disabled
  *   unless 'Other' is the selected discoveryChannel value; switching away
  *   from 'Other' clears whatever was typed there.
@@ -222,20 +219,40 @@ export default function PurposeOfVisitSection({
           />
         </div>
 
-        {/* Row 2: Occasion / Guests (2-col) */}
+        {/* Row 2: Occasion (+ conditional "Please specify") / Guests (2-col) */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
-          <FormSelect
-            id='field-occasion'
-            label='What occasion are you planning for?'
-            name='occasion'
-            required
-            value={form.occasion}
-            onChange={handleChange}
-            onBlur={() => handleFieldBlur('occasion')}
-            placeholder='Select occasion'
-            options={OCCASION_OPTIONS}
-            error={touched.occasion ? errors.occasion : undefined}
-          />
+          <div className='flex flex-col gap-8'>
+            <FormSelect
+              id='field-occasion'
+              label='What occasion are you planning for?'
+              name='occasion'
+              required
+              value={form.occasion}
+              onChange={handleChange}
+              onBlur={() => handleFieldBlur('occasion')}
+              placeholder='Select occasion'
+              options={OCCASION_OPTIONS}
+              error={touched.occasion ? errors.occasion : undefined}
+            />
+
+            {/* Conditional Occasion "Other" — nested directly under Occasion */}
+            {form.occasion === 'Other' && (
+              <FormField
+                id='field-occasionOther'
+                label='Please specify'
+                name='occasionOther'
+                required
+                value={form.occasionOther}
+                onChange={handleChange}
+                onBlur={() => handleFieldBlur('occasionOther')}
+                placeholder='Please specify your occasion'
+                error={
+                  touched.occasionOther ? errors.occasionOther : undefined
+                }
+              />
+            )}
+          </div>
+
           <FormSelect
             id='field-guests'
             label='How many guests are you expecting?'
@@ -249,23 +266,6 @@ export default function PurposeOfVisitSection({
             error={touched.guests ? errors.guests : undefined}
           />
         </div>
-
-        {/* Conditional Occasion "Other" */}
-        {form.occasion === 'Other' && (
-          <FormField
-            id='field-occasionOther'
-            label='Please specify'
-            name='occasionOther'
-            required
-            value={form.occasionOther}
-            onChange={handleChange}
-            onBlur={() => handleFieldBlur('occasionOther')}
-            placeholder='Please specify your occasion'
-            error={
-              touched.occasionOther ? errors.occasionOther : undefined
-            }
-          />
-        )}
 
         {/* Row 3: Budget / Suppliers checklist (2-col) */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
@@ -348,52 +348,6 @@ export default function PurposeOfVisitSection({
           onChange={handleChange}
           placeholder="Supplier's name"
         />
-
-        {/* Lumi Candles Radio (full-width horizontal row) — now required */}
-        <div id='field-lumiPromos' className='flex flex-col gap-1 scroll-mt-24'>
-          <label className='text-[#121212] mb-2 block text-[14px] font-medium font-satoshi'>
-            Would you like to receive discounts & promos from Lumi Candles?
-            <span className='text-red-500 ml-0.5'>*</span>
-          </label>
-          <div className='flex flex-row flex-wrap items-center gap-4 pt-2'>
-            {LUMI_OPTIONS.map((option) => (
-              <label
-                key={option}
-                className='flex items-center gap-2 cursor-pointer'
-              >
-                <div className='relative'>
-                  <input
-                    type='radio'
-                    name='lumiPromos'
-                    value={option}
-                    checked={form.lumiPromos === option}
-                    onChange={() => handleRadioChange('lumiPromos', option)}
-                    className='sr-only'
-                  />
-                  <div
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
-                      form.lumiPromos === option
-                        ? 'border-[#C55F61]'
-                        : 'border-[#ACACAC]'
-                    }`}
-                  >
-                    {form.lumiPromos === option && (
-                      <div className='w-2 h-2 rounded-full bg-[#C55F61]' />
-                    )}
-                  </div>
-                </div>
-                <span className='text-[16px] text-text-dark font-medium font-satoshi'>
-                  {option}
-                </span>
-              </label>
-            ))}
-          </div>
-          {touched.lumiPromos && errors.lumiPromos ? (
-            <p className='text-[11px] text-red-500 mt-0.5'>
-              {errors.lumiPromos}
-            </p>
-          ) : null}
-        </div>
 
         {/* Discovery Radio Grid (2 columns per Figma) */}
         <div id='field-discoveryChannel' className='flex flex-col gap-1 scroll-mt-24'>

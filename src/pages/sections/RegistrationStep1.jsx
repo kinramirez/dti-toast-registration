@@ -131,6 +131,9 @@ export default function RegistrationStep1({
         <OrganizationSection
           form={form}
           onChange={onChange}
+          onFieldTouch={onFieldTouch}
+          errors={errors}
+          touched={touched}
         />
 
         {/* ── Section 3: Purpose of Visit ── */}
