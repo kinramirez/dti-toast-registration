@@ -41,7 +41,6 @@ const FIELD_ORDER = [
   'suppliers',
   'suppliersOther',
   'specificSuppliers',
-  'lumiPromos',
   'discoveryChannel',
   'discoveryOther',
 ];

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { User } from 'lucide-react';
 
 import FormField from '@/components/ui/FormField';
@@ -23,6 +24,13 @@ const AGE_OPTIONS = [
  * - Fields: firstName, lastName, age, gender, email, phone (+63 prefix), region, province, city, barangay
  * - Layout: 2-col → 2-col → full → full → 2-col → 2-col → full
  *
+ * Address flow supports two paths after Region is picked:
+ *   1. Pick Province → City list narrows to that province
+ *   2. Skip Province, pick City directly → City list spans the whole
+ *      region; Province is then auto-derived from the chosen city
+ *      (handled inside usePhilippineAddress's setCityCode) and its
+ *      display name is synced into form.province via the effect below.
+ *
  * Props:
  * @param {object} form - All form field values
  * @param {function} onChange - Generic field change handler
@@ -33,16 +41,16 @@ const AGE_OPTIONS = [
  *   whole-form "scroll to first invalid field" behavior.
  * @param {string} regionCode - Current region code for cascading
  * @param {function} setRegionCode - Region change handler
- * @param {string} provinceCode - Current province code for cascading
+ * @param {string} provinceCode - Current province code (user-picked OR auto-derived from City)
  * @param {function} setProvinceCode - Province change handler
  * @param {string} cityCode - Current city code
- * @param {function} setCityCode - City change handler
+ * @param {function} setCityCode - City change handler (also derives province internally)
  * @param {string} barangayCode - Current barangay code
  * @param {function} setBarangayCode - Barangay change handler
- * @param {array} regionOptions - Async-loaded region list
- * @param {array} provinceOptions - Async-loaded province list (depends on regionCode)
- * @param {array} cityOptions - Async-loaded city list (depends on provinceCode)
- * @param {array} barangayOptions - Async-loaded barangay list (depends on cityCode)
+ * @param {array} regionOptions - Region list
+ * @param {array} provinceOptions - Province list (depends on regionCode)
+ * @param {array} cityOptions - City list (depends on provinceCode if set, otherwise spans the whole region)
+ * @param {array} barangayOptions - Barangay list (depends on cityCode)
  * @param {string|null} addressError - Address loading error
  */
 export default function BasicInfoSection({
@@ -110,14 +118,12 @@ export default function BasicInfoSection({
 
   function handleProvinceChange(nextCode) {
     setProvinceCode(nextCode);
-    const selected = provinceOptions.find((p) => p.province_code === nextCode);
-    onChange({
-      target: { name: 'province', value: selected?.province_name ?? '' },
-    });
     // Reset city and barangay when province changes
     setCityCode('');
     onChange({ target: { name: 'city', value: '' } });
     onChange({ target: { name: 'barangay', value: '' } });
+    // form.province text is synced by the effect below once provinceOptions
+    // reflects this new code — no need to set it here directly.
   }
 
   function handleCityChange(nextCode) {
@@ -128,6 +134,9 @@ export default function BasicInfoSection({
     });
     // Reset barangay when city changes
     onChange({ target: { name: 'barangay', value: '' } });
+    // form.province text is synced by the effect below — setCityCode
+    // (from usePhilippineAddress) derives provinceCode internally when
+    // the user skips straight to City.
   }
 
   function handleBarangayChange(nextCode) {
@@ -137,6 +146,25 @@ export default function BasicInfoSection({
       target: { name: 'barangay', value: selected?.brgy_name ?? '' },
     });
   }
+
+  // Keeps form.province's display text in sync with provinceCode no
+  // matter how provinceCode was set — explicitly via the Province
+  // dropdown, or auto-derived from picking a City directly.
+  useEffect(() => {
+    if (!provinceCode) {
+      if (form.province) {
+        onChange({ target: { name: 'province', value: '' } });
+      }
+      return;
+    }
+    const selected = provinceOptions.find(
+      (p) => p.province_code === provinceCode,
+    );
+    if (selected && selected.province_name !== form.province) {
+      onChange({ target: { name: 'province', value: selected.province_name } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [provinceCode, provinceOptions]);
 
   return (
     <section id='basicInfo' className='mb-[34px]'>
@@ -331,6 +359,9 @@ export default function BasicInfoSection({
                 touched.province && errors.province ? errors.province : undefined
               }
             />
+            <p className='text-[11px] text-neutral-gray mt-1 font-satoshi'>
+              Not sure? You can skip this and pick your City below instead.
+            </p>
           </div>
         </div>
 
@@ -344,11 +375,14 @@ export default function BasicInfoSection({
               onChange={handleCityChange}
               options={citySelectOptions}
               placeholder='Select your city'
-              disabled={!provinceCode}
+              disabled={!regionCode}
               error={
                 touched.city && errors.city ? errors.city : undefined
               }
             />
+            <p className='text-[11px] text-neutral-gray mt-1 font-satoshi'>
+              Selecting a city will auto-fill your province above.
+            </p>
           </div>
           <div ref={registerField('barangay')}>
             <SearchableSelect

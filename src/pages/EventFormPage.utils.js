@@ -31,7 +31,6 @@ export function buildPayload(form, eventGuId) {
     suppliersLookingFor: (form.suppliers || []).join(', '),
     suppliersOther: form.suppliersOther?.trim() || null,
     specificSuppliers: form.specificSuppliers?.trim() || null,
-    promoPreference: form.lumiPromos || null,
     discoveryOther: form.discoveryOther.trim() || null,
     // Address fields
     region: form.region,

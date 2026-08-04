@@ -101,7 +101,6 @@ export default function EventFormPage() {
       occasionOther: form.occasionOther,
       suppliersOther: form.suppliersOther,
       specificSuppliers: form.specificSuppliers,
-      lumiPromos: form.lumiPromos,
       discoveryChannel: form.discoveryChannel,
       discoveryOther: form.discoveryOther,
     });
@@ -130,7 +129,7 @@ export default function EventFormPage() {
       form.firstName, form.lastName, form.age,
       form.email, form.phone, form.company, form.position,
       form.role, form.eventDate, form.occasion, form.guests, form.budget,
-      form.specificSuppliers, form.lumiPromos, form.discoveryChannel,
+      form.specificSuppliers, form.discoveryChannel,
       form.discoveryOther, form.region, form.province, form.city, form.barangay,
       form.occasionOther, form.suppliersOther,
     ];
@@ -169,7 +168,6 @@ export default function EventFormPage() {
       guests: true,
       budget: true,
       suppliers: true,
-      lumiPromos: true,
       discoveryChannel: true,
       ...(form.occasion === 'Other' ? { occasionOther: true } : {}),
       ...(form.suppliers.includes('Other') ? { suppliersOther: true } : {}),
@@ -197,7 +195,6 @@ export default function EventFormPage() {
       occasionOther: form.occasionOther,
       suppliersOther: form.suppliersOther,
       specificSuppliers: form.specificSuppliers,
-      lumiPromos: form.lumiPromos,
       discoveryChannel: form.discoveryChannel,
       discoveryOther: form.discoveryOther,
     });
@@ -248,7 +245,6 @@ export default function EventFormPage() {
       occasionOther: form.occasionOther,
       suppliersOther: form.suppliersOther,
       specificSuppliers: form.specificSuppliers,
-      lumiPromos: form.lumiPromos,
       discoveryChannel: form.discoveryChannel,
       discoveryOther: form.discoveryOther,
     });

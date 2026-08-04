@@ -376,19 +376,6 @@ export default function RegistrationStep2({
               </span>
             </div>
 
-            {/* Lumi Candles — full-width (radio-derived, use #434343) */}
-            <div className='md:col-span-2 flex flex-col gap-1'>
-              <span className='text-[12px] text-text-meta font-satoshi'>
-                Would you like to receive discounts & promos from Lumi Candles?
-              </span>
-              <span
-                className='text-[14px] font-satoshi'
-                style={{ color: '#434343' }}
-              >
-                {form.lumiPromos || '—'}
-              </span>
-            </div>
-
             {/* Discovery — full-width (radio-derived, use #434343) */}
             <div className='md:col-span-2 flex flex-col gap-1'>
               <span className='text-[12px] text-text-meta font-satoshi'>

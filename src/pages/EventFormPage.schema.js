@@ -11,12 +11,6 @@ export const initialForm = {
   email: '',
   phone: '',
 
-  // Address
-  region: '',
-  province: '',
-  city: '',
-  barangay: '',
-
   // Organization/Company
   company: '',
   position: '',
@@ -31,14 +25,17 @@ export const initialForm = {
   occasionOther: '',
   suppliersOther: '',
   specificSuppliers: '',
-  lumiPromos: '',
   discoveryChannel: '',
   discoveryOther: '',
+  province: '',
+  city: '',
+  barangay: '',
   consent: false,
 
   // Legacy fields (retained for backward compatibility)
   fullName: '',
   address: '',
+  region: '',
   contactNumber: '',
   purpose: 'General Shopper',
   source: 'DTI Social Media',
@@ -46,13 +43,15 @@ export const initialForm = {
   agreed: false,
 };
 
-// Merged validation schema for all 24 Step 1 fields
+// Merged validation schema for all Step 1 fields
 export const registrationSchema = z.object({
   // Basic Information
   firstName: z.string().trim().min(1, 'First name is required.'),
   lastName: z.string().trim().min(1, 'Last name is required.'),
   age: z.string().min(1, 'Please select your age.'),
-  gender: z.enum(['Male', 'Female']),
+  gender: z.enum(['Male', 'Female'], {
+    errorMap: () => ({ message: 'Please select your gender.' }),
+  }),
   email: z
     .string()
     .trim()
@@ -65,8 +64,7 @@ export const registrationSchema = z.object({
       /^9\d{9}$/,
       'Please enter a valid 10-digit number starting with 9 (e.g., 9123456789).',
     ),
-  region: z.string().min(1, 'Please select your region.'),
-  province: z.string().min(1, 'Please select your province.'),
+  province: z.string().min(1, 'Please select your region.'),
   city: z.string().min(1, 'Please select your city.'),
   barangay: z.string().min(1, 'Please select your barangay.'),
 
@@ -84,7 +82,6 @@ export const registrationSchema = z.object({
   occasionOther: z.string().optional(),
   suppliersOther: z.string().optional(),
   specificSuppliers: z.string().optional(),
-  lumiPromos: z.string().min(1, 'Please select your Lumi Candles preference.'),
   discoveryChannel: z
     .string()
     .min(1, 'Please select how you heard about the event.'),
@@ -102,6 +99,13 @@ export const registrationSchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ['suppliersOther'],
       message: 'Please specify other suppliers.',
+    });
+  }
+  if (data.discoveryChannel === 'Other' && !data.discoveryOther?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['discoveryOther'],
+      message: 'Please specify how you heard about the event.',
     });
   }
 });
