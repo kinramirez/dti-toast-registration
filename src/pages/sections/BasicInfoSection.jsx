@@ -5,17 +5,6 @@ import FormField from '@/components/ui/FormField';
 import FormSelect from '@/components/ui/FormSelect';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 
-const AGE_OPTIONS = [
-  '20 and below',
-  '21-25',
-  '26-30',
-  '31-35',
-  '36-40',
-  '41-45',
-  '46-50',
-  '51 and above',
-];
-
 /**
  * BasicInfoSection — Basic Information form sub-section.
  *
@@ -42,6 +31,13 @@ const AGE_OPTIONS = [
  * since they react to the code values themselves, not to which handler
  * triggered the change.
  *
+ * Age and gender options both come from `formOptions.getGroupValues(...)`
+ * (shared useFormOptions() hook fetched once at EventFormPage level)
+ * instead of hardcoded arrays. Gender is rendered as radio buttons rather
+ * than a select, so the group's value list drives the mapped buttons
+ * instead of a fixed ['Male', 'Female'] literal — if the backend ever
+ * adds a third gender option, it appears here automatically.
+ *
  * Props:
  * @param {object} form - All form field values
  * @param {function} onChange - Generic field change handler
@@ -61,6 +57,8 @@ const AGE_OPTIONS = [
  * @param {array} cityOptions - Async-loaded city list
  * @param {array} barangayOptions - Async-loaded barangay list
  * @param {string|null} addressError - Address loading error
+ * @param {object} formOptions - Shared useFormOptions() return value
+ *   ({ optionGroups, loading, error, getGroupValues, getOtherValue })
  */
 export default function BasicInfoSection({
   form,
@@ -81,7 +79,11 @@ export default function BasicInfoSection({
   cityOptions,
   barangayOptions,
   addressError,
+  formOptions,
 }) {
+  const ageOptions = formOptions?.getGroupValues('age') ?? [];
+  const genderOptions = formOptions?.getGroupValues('gender') ?? [];
+
   function handleChange(e) {
     onChange(e);
   }
@@ -256,7 +258,7 @@ export default function BasicInfoSection({
             onChange={handleChange}
             onBlur={() => handleFieldBlur('age')}
             placeholder='Select your age'
-            options={AGE_OPTIONS}
+            options={ageOptions}
             error={touched.age ? errors.age : undefined}
           />
           {/* Gender Radio Buttons */}
@@ -265,7 +267,7 @@ export default function BasicInfoSection({
               Gender<span className='text-red-500 ml-0.5'>*</span>
             </label>
             <div className='flex items-center gap-6 pt-2'>
-              {['Male', 'Female'].map((gender) => (
+              {genderOptions.map((gender) => (
                 <label
                   key={gender}
                   className='flex items-center gap-2 cursor-pointer'

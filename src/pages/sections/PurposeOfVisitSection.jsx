@@ -3,101 +3,6 @@ import { Handshake, Check } from 'lucide-react';
 import FormField from '@/components/ui/FormField';
 import FormSelect from '@/components/ui/FormSelect';
 
-const ROLE_OPTIONS = [
-  'I am the one planning it.',
-  'I am accompanying someone.',
-  'I am just looking around.',
-];
-
-const EVENT_DATE_OPTIONS = [
-  'July-Dec 2026',
-  'Jan-June 2027',
-  'July-Dec 2027',
-  'Jan-June 2028',
-  'July-Dec 2028',
-  'Jan-June 2029',
-  'July 2029 onwards',
-];
-
-const OCCASION_OPTIONS = [
-  'Wedding',
-  'Debut',
-  'Birthday Party',
-  'Social Gathering',
-  'Anniversary',
-  'Family Reunion',
-  'Corporate Event',
-  'Other',
-];
-
-const GUESTS_OPTIONS = [
-  'Below 50',
-  '50-100',
-  '101-150',
-  '151-200',
-  '201-250',
-  '251-300',
-  '301-350',
-  '351-400',
-  '401-450',
-  '451-500',
-  '501 and above',
-];
-
-const BUDGET_OPTIONS = [
-  'Below PHP 100,000',
-  'PHP 100,000 - PHP 300,000',
-  'PHP 301,000 - PHP 500,000',
-  'PHP 501,000 - PHP 999,000',
-  'PHP 1,000,000 - PHP 1,500,000',
-  'PHP 1,600,000 - PHP 2,000,000',
-  'PHP 2,100,000 - PHP 2,900,000',
-  'PHP 3,000,000 and above',
-];
-
-const DISCOVERY_OPTIONS = [
-  'Toast Wedding Fair Instagram',
-  'Toast Wedding Fair Facebook',
-  'Toast Wedding Fair Tiktok',
-  'Bride and Breakfast',
-  'Email Newsletter',
-  'DiscoverMNL',
-  'Text Message',
-  'Billboards/Outdoor Banners',
-  'Flyer',
-  'Friends & Family',
-  'WhenInManila',
-  'Other',
-];
-
-const SUPPLIERS_OPTIONS = [
-  'Alcohol Suppliers',
-  'Bridal Car',
-  'Bridal Shoes and Accessories',
-  'Cakes and other Baked Goods',
-  'Caterers',
-  'Coordinator',
-  'Entertainment',
-  'Event Stylist',
-  'Fashion Stylist',
-  'Florist',
-  'Food Carts',
-  'Gowns and Suits',
-  'Host',
-  'Invitations and Stationary',
-  'Jewelry',
-  'Lights and Sounds',
-  'Make Up Artists',
-  'Mobile Bar',
-  'Photographers',
-  'Prenup Needs',
-  'Tent and Aircon Rental',
-  'Venue',
-  'Videographers',
-  'Souvenirs',
-  'Other',
-];
-
 /**
  * PurposeOfVisitSection — Purpose of Visit form sub-section.
  *
@@ -109,12 +14,24 @@ const SUPPLIERS_OPTIONS = [
  * Every field carries `id="field-<schemaKey>"` so EventFormPage can
  * scroll to the first invalid field when "Save & Continue" is clicked.
  *
+ * Option lists (role, eventDate, occasion, guests, budget, suppliers,
+ * discoveryChannel) are no longer hardcoded here — they come from the
+ * `formOptions` prop, sourced from a single GET /form-options request via
+ * the useFormOptions hook and shared with BasicInfoSection's age/gender
+ * fields. This avoids each field firing its own `?type=` request and
+ * keeps the option source-of-truth on the backend.
+ *
  * - The conditional "Please specify" field for Occasion is nested directly
  *   under the Occasion select (inside the same grid column) so it always
  *   appears immediately below Occasion, not below the whole 2-col row.
  * - The "Other" text field under the discovery-channel grid is disabled
- *   unless 'Other' is the selected discoveryChannel value; switching away
- *   from 'Other' clears whatever was typed there.
+ *   unless the discovery-channel's `isOther` option is selected; switching
+ *   away from it clears whatever was typed there.
+ * - "Other" detection for occasion/suppliers/discoveryChannel is driven by
+ *   each option's `isOther` flag from the API (via formOptions.getOtherValue),
+ *   rather than a hardcoded `'Other'` string literal, so a backend rename
+ *   of that option's label/value doesn't silently break the specify-field
+ *   logic.
  * - Suppliers checklist container has horizontal padding (px-3) so the
  *   checkbox buttons' focus ring (which sits outside the button via
  *   ring-offset-1) has room to render fully and doesn't get clipped by
@@ -130,6 +47,7 @@ const SUPPLIERS_OPTIONS = [
  * @param {function} onFieldTouch - Marks a single field as touched (fieldName) => void
  * @param {object} errors - Validation errors
  * @param {object} touched - Per-field touched state
+ * @param {object} formOptions - Result of useFormOptions(): { optionGroups, loading, error, getGroupValues, getOtherValue }
  */
 export default function PurposeOfVisitSection({
   form,
@@ -137,7 +55,26 @@ export default function PurposeOfVisitSection({
   onFieldTouch,
   errors,
   touched,
+  formOptions,
 }) {
+  const { getGroupValues, getOtherValue } = formOptions;
+
+  // Plain-string option lists, safe to use before the fetch resolves
+  // (getGroupValues falls back to [] while formOptions.optionGroups is null).
+  const roleOptions = getGroupValues('role');
+  const eventDateOptions = getGroupValues('eventDate');
+  const occasionOptions = getGroupValues('occasion');
+  const guestsOptions = getGroupValues('guests');
+  const budgetOptions = getGroupValues('budget');
+  const suppliersOptions = getGroupValues('suppliers');
+  const discoveryOptions = getGroupValues('discoveryChannel');
+
+  // The literal value that represents "Other" for each group, resolved
+  // from the API's isOther flag instead of hardcoded.
+  const occasionOtherValue = getOtherValue('occasion');
+  const suppliersOtherValue = getOtherValue('suppliers');
+  const discoveryOtherValue = getOtherValue('discoveryChannel');
+
   function handleChange(e) {
     onChange(e);
   }
@@ -150,9 +87,9 @@ export default function PurposeOfVisitSection({
     onChange({ target: { name, value } });
     onFieldTouch?.(name);
     // Clear the free-text "Other" value whenever the user picks a
-    // discovery channel other than 'Other', so stale text can't sneak
-    // into the payload while the field is disabled.
-    if (name === 'discoveryChannel' && value !== 'Other') {
+    // discovery channel other than the isOther-flagged one, so stale
+    // text can't sneak into the payload while the field is disabled.
+    if (name === 'discoveryChannel' && value !== discoveryOtherValue) {
       onChange({ target: { name: 'discoveryOther', value: '' } });
     }
   }
@@ -166,7 +103,7 @@ export default function PurposeOfVisitSection({
     onFieldTouch?.('suppliers');
   }
 
-  const isDiscoveryOther = form.discoveryChannel === 'Other';
+  const isDiscoveryOther = form.discoveryChannel === discoveryOtherValue;
 
   return (
     <section id='purposeOfVisit' className='mb-[34px]'>
@@ -202,7 +139,7 @@ export default function PurposeOfVisitSection({
             onChange={handleChange}
             onBlur={() => handleFieldBlur('role')}
             placeholder='Select your role'
-            options={ROLE_OPTIONS}
+            options={roleOptions}
             error={touched.role ? errors.role : undefined}
           />
           <FormSelect
@@ -214,7 +151,7 @@ export default function PurposeOfVisitSection({
             onChange={handleChange}
             onBlur={() => handleFieldBlur('eventDate')}
             placeholder='Select your event date'
-            options={EVENT_DATE_OPTIONS}
+            options={eventDateOptions}
             error={touched.eventDate ? errors.eventDate : undefined}
           />
         </div>
@@ -231,12 +168,12 @@ export default function PurposeOfVisitSection({
               onChange={handleChange}
               onBlur={() => handleFieldBlur('occasion')}
               placeholder='Select occasion'
-              options={OCCASION_OPTIONS}
+              options={occasionOptions}
               error={touched.occasion ? errors.occasion : undefined}
             />
 
             {/* Conditional Occasion "Other" — nested directly under Occasion */}
-            {form.occasion === 'Other' && (
+            {form.occasion === occasionOtherValue && (
               <FormField
                 id='field-occasionOther'
                 label='Please specify'
@@ -262,7 +199,7 @@ export default function PurposeOfVisitSection({
             onChange={handleChange}
             onBlur={() => handleFieldBlur('guests')}
             placeholder='Select number of guests'
-            options={GUESTS_OPTIONS}
+            options={guestsOptions}
             error={touched.guests ? errors.guests : undefined}
           />
         </div>
@@ -278,7 +215,7 @@ export default function PurposeOfVisitSection({
             onChange={handleChange}
             onBlur={() => handleFieldBlur('budget')}
             placeholder='Select Budget'
-            options={BUDGET_OPTIONS}
+            options={budgetOptions}
             error={touched.budget ? errors.budget : undefined}
           />
 
@@ -289,7 +226,7 @@ export default function PurposeOfVisitSection({
               <span className='text-red-500 ml-0.5'>*</span>
             </label>
             <div className='grid grid-cols-1 gap-2 py-2 px-3 max-h-[280px] overflow-y-auto'>
-              {SUPPLIERS_OPTIONS.map((option) => (
+              {suppliersOptions.map((option) => (
                 <label
                   key={option}
                   className='flex items-center gap-2 cursor-pointer'
@@ -324,7 +261,7 @@ export default function PurposeOfVisitSection({
         </div>
 
         {/* Conditional Suppliers "Other" */}
-        {(form.suppliers || []).includes('Other') && (
+        {(form.suppliers || []).includes(suppliersOtherValue) && (
           <FormField
             id='field-suppliersOther'
             label='Please specify'
@@ -356,7 +293,7 @@ export default function PurposeOfVisitSection({
             <span className='text-red-500 ml-0.5'>*</span>
           </label>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-3 pt-2'>
-            {DISCOVERY_OPTIONS.map((option) => (
+            {discoveryOptions.map((option) => (
               <label
                 key={option}
                 className='flex items-center gap-2 cursor-pointer'
@@ -397,7 +334,7 @@ export default function PurposeOfVisitSection({
           ) : null}
         </div>
 
-        {/* Discovery Other (full-width) — only editable when 'Other' is selected above */}
+        {/* Discovery Other (full-width) — only editable when the isOther option is selected above */}
         <FormField
           id='field-discoveryOther'
           label='Other'

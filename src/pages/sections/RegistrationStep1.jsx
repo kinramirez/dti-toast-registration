@@ -41,6 +41,9 @@ const STEPS = [
  * @param {array} cityOptions - Async-loaded city list
  * @param {array} barangayOptions - Async-loaded barangay list
  * @param {string|null} addressError - Address loading error
+ * @param {object} formOptions - Shared useFormOptions() return value, forwarded
+ *   to BasicInfoSection (age) and PurposeOfVisitSection (role, eventDate,
+ *   occasion, guests, budget, suppliers, discoveryChannel)
  */
 export default function RegistrationStep1({
   form,
@@ -63,6 +66,7 @@ export default function RegistrationStep1({
   cityOptions,
   barangayOptions,
   addressError,
+  formOptions,
 }) {
   function handleSubmit(e) {
     e.preventDefault();
@@ -125,6 +129,7 @@ export default function RegistrationStep1({
           cityOptions={cityOptions}
           barangayOptions={barangayOptions}
           addressError={addressError}
+          formOptions={formOptions}
         />
 
         {/* ── Section 2: Organization/Company Information ── */}
@@ -143,6 +148,7 @@ export default function RegistrationStep1({
           onFieldTouch={onFieldTouch}
           errors={errors}
           touched={touched}
+          formOptions={formOptions}
         />
 
         {/* ── Save & Continue Button ── */}
