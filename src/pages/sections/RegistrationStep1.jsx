@@ -6,6 +6,7 @@ import StepIndicator from '@/components/ui/StepIndicator';
 import BasicInfoSection from './BasicInfoSection';
 import OrganizationSection from './OrganizationSection';
 import PurposeOfVisitSection from './PurposeOfVisitSection';
+import { parseDateAsLocal } from '@/lib/utils/eventUtils';
 
 const STEPS = [
   { number: 1, label: 'Attendee Information' },
@@ -54,8 +55,8 @@ const FIELD_ORDER = [
  *   - Different years:     "November 12, 2026 – January 3, 2027"
  */
 function formatDateRange(startDateStr, endDateStr) {
-  const start = startDateStr ? new Date(startDateStr) : null;
-  const end = endDateStr ? new Date(endDateStr) : null;
+  const start = startDateStr ? parseDateAsLocal(startDateStr) : null;
+  const end = endDateStr ? parseDateAsLocal(endDateStr) : null;
 
   const startValid = start && !Number.isNaN(start.getTime());
   const endValid = end && !Number.isNaN(end.getTime());
