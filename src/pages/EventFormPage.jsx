@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { usePhilippineAddress } from '../hooks/usePhilippineAddress';
+import { useFormOptions } from '../hooks/useFormOptions';
 import { registerEvent } from '../api/registration';
 import { getEventById } from '../api/events';
 
@@ -77,6 +78,12 @@ export default function EventFormPage() {
     addressError,
   } = usePhilippineAddress();
 
+  // Fetched once here, shared by BasicInfoSection (age/gender) and
+  // PurposeOfVisitSection (role/eventDate/occasion/guests/budget/
+  // suppliers/discoveryChannel) instead of each field making its own
+  // ?type= request.
+  const formOptions = useFormOptions();
+
   // Merged validation errors for all Step 1 fields
   const step1Errors = useMemo(() => {
     const result = registrationSchema.safeParse({
@@ -147,6 +154,12 @@ export default function EventFormPage() {
 
   // Step 1 → Step 2 (no confirmation modal)
   function handleNextStep1() {
+    // Resolve each group's "Other" literal from the fetched option
+    // metadata (isOther flag) rather than hardcoding 'Other', so this
+    // stays correct even if the backend renames that option.
+    const occasionOtherValue = formOptions.getOtherValue('occasion');
+    const suppliersOtherValue = formOptions.getOtherValue('suppliers');
+
     // Mark all Step 1 fields as touched
     setTouched((prev) => ({
       ...prev,
@@ -169,8 +182,8 @@ export default function EventFormPage() {
       budget: true,
       suppliers: true,
       discoveryChannel: true,
-      ...(form.occasion === 'Other' ? { occasionOther: true } : {}),
-      ...(form.suppliers.includes('Other') ? { suppliersOther: true } : {}),
+      ...(form.occasion === occasionOtherValue ? { occasionOther: true } : {}),
+      ...(form.suppliers.includes(suppliersOtherValue) ? { suppliersOther: true } : {}),
     }));
 
     const result = registrationSchema.safeParse({
@@ -360,6 +373,7 @@ export default function EventFormPage() {
                       cityOptions={cityOptions}
                       barangayOptions={barangayOptions}
                       addressError={addressError}
+                      formOptions={formOptions}
                     />
                   </motion.div>
                 )}

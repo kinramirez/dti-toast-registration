@@ -5,17 +5,6 @@ import FormField from '@/components/ui/FormField';
 import FormSelect from '@/components/ui/FormSelect';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 
-const AGE_OPTIONS = [
-  '20 and below',
-  '21-25',
-  '26-30',
-  '31-35',
-  '36-40',
-  '41-45',
-  '46-50',
-  '51 and above',
-];
-
 /**
  * BasicInfoSection — Basic Information form sub-section.
  *
@@ -30,6 +19,10 @@ const AGE_OPTIONS = [
  *      region; Province is then auto-derived from the chosen city
  *      (handled inside usePhilippineAddress's setCityCode) and its
  *      display name is synced into form.province via the effect below.
+ *
+ * Age and gender options both come from `formOptions.getGroupValues(...)`
+ * (shared useFormOptions() hook fetched once at EventFormPage level)
+ * instead of hardcoded arrays.
  *
  * Props:
  * @param {object} form - All form field values
@@ -52,6 +45,8 @@ const AGE_OPTIONS = [
  * @param {array} cityOptions - City list (depends on provinceCode if set, otherwise spans the whole region)
  * @param {array} barangayOptions - Barangay list (depends on cityCode)
  * @param {string|null} addressError - Address loading error
+ * @param {object} formOptions - Shared useFormOptions() return value
+ *   ({ optionGroups, loading, error, getGroupValues, getOtherValue })
  */
 export default function BasicInfoSection({
   form,
@@ -72,7 +67,11 @@ export default function BasicInfoSection({
   cityOptions,
   barangayOptions,
   addressError,
+  formOptions,
 }) {
+  const ageOptions = formOptions?.getGroupValues('age') ?? [];
+  const genderOptions = formOptions?.getGroupValues('gender') ?? [];
+
   function handleChange(e) {
     onChange(e);
   }
@@ -225,7 +224,7 @@ export default function BasicInfoSection({
               value={form.age}
               onChange={handleChange}
               placeholder='Select your age'
-              options={AGE_OPTIONS}
+              options={ageOptions}
               error={touched.age ? errors.age : undefined}
             />
           </div>
@@ -235,7 +234,7 @@ export default function BasicInfoSection({
               Gender<span className='text-red-500 ml-0.5'>*</span>
             </label>
             <div className='flex items-center gap-6 pt-2'>
-              {['Male', 'Female'].map((gender) => (
+              {genderOptions.map((gender) => (
                 <label
                   key={gender}
                   className='flex items-center gap-2 cursor-pointer'
