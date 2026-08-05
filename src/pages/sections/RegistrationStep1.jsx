@@ -15,8 +15,13 @@ const STEPS = [
 /**
  * RegistrationStep1 — Consolidated data-entry form with all fields.
  *
- * Card header title/date/venue is bound directly to the `event` prop
- * (event.title / event.startDate / event.endDate / event.location).
+ * Card header: the boilerplate "Pre-Register for FREE Entrance" copy is
+ * a tracked eyebrow label, separate from the event title, which is
+ * rendered large (64/88px) in the brand rose gradient so it's the
+ * dominant element on the page. Eyebrow and date/venue are sized up
+ * from the first pass (12px/15px → 14px/18px) so they read as a
+ * supporting line rather than disappearing under the larger title —
+ * still clearly secondary to the headline, but no longer illegible.
  *
  * Props:
  * @param {object} form - All form field values
@@ -42,7 +47,7 @@ const STEPS = [
  * @param {array} barangayOptions - Async-loaded barangay list
  * @param {string|null} addressError - Address loading error
  * @param {object} formOptions - Shared useFormOptions() return value, forwarded
- *   to BasicInfoSection (age) and PurposeOfVisitSection (role, eventDate,
+ *   to BasicInfoSection (age, gender) and PurposeOfVisitSection (role, eventDate,
  *   occasion, guests, budget, suppliers, discoveryChannel)
  */
 export default function RegistrationStep1({
@@ -73,9 +78,7 @@ export default function RegistrationStep1({
     onNext();
   }
 
-  const title = event?.title
-    ? `Pre-Register for FREE Entrance - ${event.title}`
-    : '';
+  const eventTitle = event?.title ?? '';
 
   const dateStr = event?.startDate
     ? `${formatDate(event.startDate)}${event.endDate ? ` - ${formatDate(event.endDate)}` : ''}`
@@ -91,14 +94,42 @@ export default function RegistrationStep1({
       }}
     >
       {/* ── Card Header ── */}
-      <div className='flex flex-col items-center text-center mb-16'>
-        <h1 className='font-cormorant text-[32px] font-bold text-brand-dark leading-tight mb-2'>
-          {title}
+      <div className='flex flex-col items-center text-center mb-12'>
+        {/* Eyebrow — de-emphasized boilerplate, separated from the title */}
+        {eventTitle && (
+          <span
+            className='inline-flex items-center gap-3 mb-4 font-satoshi text-xl font-bold uppercase tracking-[0.2em]'
+            style={{ color: '#C55F61' }}
+          >
+            <span
+              className='h-px w-10'
+              style={{ backgroundColor: '#C55F61', opacity: 0.5 }}
+              aria-hidden='true'
+            />
+            Pre-Register for FREE Entrance
+            <span
+              className='h-px w-10'
+              style={{ backgroundColor: '#C55F61', opacity: 0.5 }}
+              aria-hidden='true'
+            />
+          </span>
+        )}
+
+        {/* Event title — the dominant element on the page */}
+        <h1 className='font-cormorant text-[64px] sm:text-[80px] lg:text-[88px] font-bold leading-[1] mb-3 px-4 break-words bg-gradient-to-b from-[#F57E80] to-[#C55F61] bg-clip-text text-transparent'>
+          {eventTitle}
         </h1>
-        <p
-          className='text-[20px] font-bold font-satoshi'
-          style={{ color: '#C55F61' }}
-        >
+
+        {/* Accent underline — echoes the title gradient, punctuates it */}
+        {eventTitle && (
+          <div
+            className='w-24 h-[4px] rounded-full mb-4 bg-gradient-to-b from-[#F57E80] to-[#C55F61]'
+            aria-hidden='true'
+          />
+        )}
+
+        {/* Date/venue — quieter than the title, but sized to stay readable */}
+        <p className='text-2xl font-semibold font-satoshi text-neutral-gray'>
           {dateVenue}
         </p>
       </div>

@@ -6,7 +6,6 @@ export async function getEvents({ page = 1, limit = 10, region, startDateFrom, s
     params: { page, limit, region, startDateFrom, startDateTo, endDateFrom, isFeatured },
   });
   const raw = response.data;
-  console.log('[getEvents] raw response:', raw);
   const events = raw?.data ?? (Array.isArray(raw) ? raw : []);
   const pagination = raw?.pagination ?? {};
   const totalItems =

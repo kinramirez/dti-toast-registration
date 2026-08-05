@@ -31,6 +31,8 @@ const WHY_REGISTER_ITEMS = [
 ];
 
 export default function RegistrationSidebar({ event, showWhyRegister = true }) {
+  const eventTitle = event?.title || 'Toast Wedding Fair';
+
   const dateStr = event?.startDate
     ? `${formatDate(event.startDate)}${event.endDate ? ` - ${formatDate(event.endDate)}` : ''}`
     : '';
@@ -53,7 +55,7 @@ export default function RegistrationSidebar({ event, showWhyRegister = true }) {
         <p className='text-[16px] text-brand-dark leading-relaxed mb-4'>
           Free Entrance for those who register now until {dateStr}!
           Submission of this form confirms that you agree to receive updates 
-          about Toast Wedding Fair! If you receive the form auto reply, it means 
+          about {eventTitle}! If you receive the form auto reply, it means 
           we have received your form and you are guaranteed
           FREE ENTRY!
         </p>

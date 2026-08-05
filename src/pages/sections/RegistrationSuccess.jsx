@@ -15,7 +15,7 @@ import dtiLogo from '@/assets/dtilogo.png';
 import toastSuccessBg from '@/assets/toast-success-bg.png';
 import Footer from '@/components/Footer';
 import ContactStrip from '@/features/events/components/ContactStrip';
-import { formatDate, formatTime } from '@/lib/utils/eventUtils';
+import { formatDate, formatTime, parseDateAsLocal } from '@/lib/utils/eventUtils';
 
 /* ───────────────────────────────────────────
    Static data
@@ -74,7 +74,7 @@ const REMINDERS = [
    Sub-components (inline)
    ─────────────────────────────────────────── */
 
-function SuccessHero({ userEmail }) {
+function SuccessHero({ userEmail, eventTitle }) {
   const emailText = userEmail
     ? `A confirmation email has been sent to ${userEmail}`
     : 'A confirmation email has been sent to your registered address.';
@@ -108,7 +108,7 @@ function SuccessHero({ userEmail }) {
           className="font-satoshi font-medium text-[16px] sm:text-[18px] md:text-[20px] max-w-[700px]"
           style={{ color: '#606060' }}
         >
-          We are excited to have you join us at Toast Wedding Fair.{' '}
+          We are excited to have you join us at {eventTitle}.{' '}
           {emailText}
         </p>
       </div>
@@ -168,7 +168,7 @@ function WhatsNextTimeline() {
       <ol className="flex flex-col md:flex-row w-full gap-8 md:gap-0">
         {TIMELINE_STEPS.map((step, idx) => (
           <li key={step.title} className="flex flex-col items-center text-center flex-1 relative px-2">
-            
+
             {/* Dashed connector to next icon (only on desktop) */}
             {idx < TIMELINE_STEPS.length - 1 && (
               <div
@@ -414,12 +414,14 @@ function RegisteredEventCard({ event, hideViewButton = false }) {
    ─────────────────────────────────────────── */
 
 export default function RegistrationSuccess({ userEmail, event, onBackToHome, hideViewEventButton = false, hideContactLink = false }) {
+  const eventTitle = event?.title || 'Toast Wedding Fair';
+
   return (
     <div className="relative z-10 bg-white min-h-screen flex flex-col">
       {/* Content area — fills available space, pushes footer down */}
       <div className="flex-1">
         {/* 1. Hero Section */}
-        <SuccessHero userEmail={userEmail} />
+        <SuccessHero userEmail={userEmail} eventTitle={eventTitle} />
 
         {/* 2. Floating Info Strip (overlaps hero) */}
         <FloatingInfoStrip />
