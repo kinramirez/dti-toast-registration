@@ -4,6 +4,7 @@ import { User } from 'lucide-react';
 import FormField from '@/components/ui/FormField';
 import FormSelect from '@/components/ui/FormSelect';
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import { REGIONS_WITHOUT_PROVINCES } from '@/hooks/usePhilippineAddress'; // adjust path to your actual hook location
 
 /**
  * BasicInfoSection — Basic Information form sub-section.
@@ -30,6 +31,14 @@ import SearchableSelect from '@/components/ui/SearchableSelect';
  * and regionCode internally. The effects below catch that case too,
  * since they react to the code values themselves, not to which handler
  * triggered the change.
+ *
+ * Province is NOT marked `required` on its field — it's conditionally
+ * required in the validation schema (see registrationSchema.superRefine
+ * in EventFormPage.schema.js), skipped entirely for regions with no
+ * province layer (e.g. NCR, via REGIONS_WITHOUT_PROVINCES). For those
+ * regions the Province SELECT is also hidden entirely (replaced with an
+ * explanatory note) rather than shown empty/disabled, since a visible
+ * dropdown with nothing to pick is confusing.
  *
  * Age and gender options both come from `formOptions.getGroupValues(...)`
  * (shared useFormOptions() hook fetched once at EventFormPage level)
@@ -83,6 +92,14 @@ export default function BasicInfoSection({
 }) {
   const ageOptions = formOptions?.getGroupValues('age') ?? [];
   const genderOptions = formOptions?.getGroupValues('gender') ?? [];
+
+  // Whether the currently selected region has no province layer at all
+  // (e.g. NCR). Derived from form.region (the region NAME, kept in sync
+  // via the useEffect below) against the set computed in
+  // usePhilippineAddress from the actual PSGC data — not hardcoded here.
+  const regionHasNoProvinces = Boolean(
+    form.region && REGIONS_WITHOUT_PROVINCES.has(form.region),
+  );
 
   function handleChange(e) {
     onChange(e);
@@ -380,20 +397,31 @@ export default function BasicInfoSection({
                 : undefined
             }
           />
-          <SearchableSelect
-            id='field-province'
-            label='Province'
-            required
-            value={provinceCode}
-            onChange={handleProvinceChange}
-            onBlur={() => handleFieldBlur('province')}
-            options={provinceSelectOptions}
-            placeholder='Select your province'
-            disabled={!regionCode}
-            error={
-              touched.province && errors.province ? errors.province : undefined
-            }
-          />
+          {regionCode && regionHasNoProvinces ? (
+            <div id='field-province' className='flex flex-col gap-1'>
+              <label className='text-[#121212] mb-2 block text-[14px] font-medium font-satoshi'>
+                Province
+              </label>
+              <p className='text-[13px] text-neutral-gray font-satoshi leading-snug'>
+                This region doesn't have provinces — you can proceed to
+                select your City below.
+              </p>
+            </div>
+          ) : (
+            <SearchableSelect
+              id='field-province'
+              label='Province'
+              value={provinceCode}
+              onChange={handleProvinceChange}
+              onBlur={() => handleFieldBlur('province')}
+              options={provinceSelectOptions}
+              placeholder='Select your province'
+              disabled={!regionCode}
+              error={
+                touched.province && errors.province ? errors.province : undefined
+              }
+            />
+          )}
         </div>
 
         {/* Row 6: City / Barangay (2-col) */}
