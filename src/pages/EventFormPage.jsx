@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { usePhilippineAddress } from '../hooks/usePhilippineAddress';
@@ -7,7 +7,7 @@ import { useFormOptions } from '../hooks/useFormOptions';
 import { registerEvent } from '../api/registration';
 import { getEventById, getLatestEvent } from '../api/events';
 
-import { initialForm, registrationSchema } from './EventFormPage.schema';
+import { initialForm, buildRegistrationSchema } from './EventFormPage.schema';
 import { stepTransition, buildPayload } from './EventFormPage.utils';
 
 import RegistrationHero from './sections/RegistrationHero';
@@ -49,6 +49,13 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
   const location = useLocation();
   const navigate = useNavigate();
   const { id } = useParams();
+
+  // ── Attribution source (?source=ads / organic / bnb / ...) ──
+  // Read once from the URL query string on mount. Not stored in `form`
+  // state since it's not a user-editable field — it rides along
+  // separately into buildPayload at submit time.
+  const [searchParams] = useSearchParams();
+  const source = searchParams.get('source') ?? null;
 
   // ── Latest-event GUID validation ──
   // Only the current/latest event is registrable. We resolve the latest
@@ -101,6 +108,19 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
 
   const event = location.state?.event ?? fetchedEvent ?? propEvent;
   const eventGuId = id ?? event?.guid ?? event?.id ?? event?.eventGuId ?? event?.guId;
+
+  // ── Address requirement (per-event) ──
+  // Defaults to true (address required) while `event` hasn't loaded yet,
+  // or for events fetched before this field existed on the backend, so
+  // existing behavior is preserved unless the event explicitly says
+  // isAddressRequired: false.
+  const isAddressRequired = event?.isAddressRequired ?? true;
+
+  const schema = useMemo(
+    () => buildRegistrationSchema(isAddressRequired),
+    [isAddressRequired],
+  );
+
   const {
     regionCode,
     setRegionCode,
@@ -125,7 +145,7 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
 
   // Merged validation errors for all Step 1 fields
   const step1Errors = useMemo(() => {
-    const result = registrationSchema.safeParse({
+    const result = schema.safeParse({
       firstName: form.firstName,
       lastName: form.lastName,
       age: form.age,
@@ -167,7 +187,7 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
       nextErrors.consent = 'You must agree to the terms to continue.';
     }
     return nextErrors;
-  }, [form]);
+  }, [form, schema]);
 
   // Check if form has any data (for beforeunload warning)
   const hasData = useMemo(() => {
@@ -234,7 +254,7 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
       ...(form.discoveryChannel === discoveryOtherValue ? { discoveryOther: true } : {}),
     }));
 
-    const result = registrationSchema.safeParse({
+    const result = schema.safeParse({
       firstName: form.firstName,
       lastName: form.lastName,
       age: form.age,
@@ -291,7 +311,7 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
     setTouched((prev) => ({ ...prev, consent: true }));
 
     // Validate all Step 1 fields
-    const result = registrationSchema.safeParse({
+    const result = schema.safeParse({
       firstName: form.firstName,
       lastName: form.lastName,
       age: form.age,
@@ -330,7 +350,7 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
     setSubmitError(null);
 
     try {
-      const payload = buildPayload(form, eventGuId);
+      const payload = buildPayload(form, eventGuId, source);
       const data = await registerEvent(payload);
       console.log('Registration response:', data);
       setStep(3);
@@ -461,6 +481,7 @@ export default function EventFormPage({ event: propEvent, hideBackLink = false, 
                     <RegistrationStep1
                       form={form}
                       event={event}
+                      isAddressRequired={isAddressRequired}
                       onChange={onChange}
                       onFieldTouch={onFieldTouch}
                       errors={step1Errors}

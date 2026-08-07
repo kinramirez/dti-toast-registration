@@ -26,6 +26,11 @@ const STEPS = [
  * Props:
  * @param {object} form - All form field values
  * @param {object} event - Current event object, null while loading
+ * @param {boolean} isAddressRequired - Whether this event needs an
+ *   address (region/province/city/barangay) collected at all. Comes
+ *   from event.isAddressRequired (EventFormPage resolves the default),
+ *   forwarded straight through to BasicInfoSection, which hides the
+ *   entire address block when false.
  * @param {function} onChange - Generic field change handler
  * @param {function} onFieldTouch - Marks a single field as touched (fieldName) => void,
  *   used for per-field blur/selection validation so errors show as soon as the
@@ -53,6 +58,7 @@ const STEPS = [
 export default function RegistrationStep1({
   form,
   event,
+  isAddressRequired = true,
   onChange,
   onFieldTouch,
   errors,
@@ -143,6 +149,7 @@ export default function RegistrationStep1({
         {/* ── Section 1: Basic Information ── */}
         <BasicInfoSection
           form={form}
+          isAddressRequired={isAddressRequired}
           onChange={onChange}
           onFieldTouch={onFieldTouch}
           errors={errors}

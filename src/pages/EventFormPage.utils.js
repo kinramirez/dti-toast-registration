@@ -8,7 +8,13 @@ export const stepTransition = {
 };
 
 // Payload builder — isolates API shape from UI state
-export function buildPayload(form, eventGuId) {
+//
+// `source` (3rd arg) is the ?source= URL param read in EventFormPage
+// (e.g. 'ads' | 'organic' | 'bnb'), used for attribution. It falls back
+// to form.source — the legacy hardcoded default ('DTI Social Media') —
+// when no ?source= param is present on the link, so existing behavior
+// is preserved for links that don't carry the new param.
+export function buildPayload(form, eventGuId, source) {
   const fullName = `${form.firstName} ${form.lastName}`.trim();
 
   return {
@@ -41,7 +47,7 @@ export function buildPayload(form, eventGuId) {
     barangay: form.barangay || '',
     contactNumber: form.phone,
     purpose: form.purpose,
-    source: form.source,
+    source: source ?? form.source,
     visitorFrequency: form.visitorFrequency,
     agreedToTerms: 'Yes, I agree.',
     howHeardAboutEvent: form.discoveryChannel,

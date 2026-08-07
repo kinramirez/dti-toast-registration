@@ -32,13 +32,19 @@ import { REGIONS_WITHOUT_PROVINCES } from '@/hooks/usePhilippineAddress'; // adj
  * since they react to the code values themselves, not to which handler
  * triggered the change.
  *
+ * Whole address block (Region/Province/City/Barangay) is hidden entirely
+ * when `isAddressRequired` is false — some events don't need attendees'
+ * address at all. The corresponding validation is already skipped in
+ * EventFormPage.schema.js's buildRegistrationSchema(isAddressRequired),
+ * so this is purely a display concern here.
+ *
  * Province is NOT marked `required` on its field — it's conditionally
- * required in the validation schema (see registrationSchema.superRefine
- * in EventFormPage.schema.js), skipped entirely for regions with no
- * province layer (e.g. NCR, via REGIONS_WITHOUT_PROVINCES). For those
- * regions the Province SELECT is also hidden entirely (replaced with an
- * explanatory note) rather than shown empty/disabled, since a visible
- * dropdown with nothing to pick is confusing.
+ * required in the validation schema (see buildRegistrationSchema's
+ * superRefine in EventFormPage.schema.js), skipped entirely for regions
+ * with no province layer (e.g. NCR, via REGIONS_WITHOUT_PROVINCES). For
+ * those regions the Province SELECT is also hidden entirely (replaced
+ * with an explanatory note) rather than shown empty/disabled, since a
+ * visible dropdown with nothing to pick is confusing.
  *
  * Age and gender options both come from `formOptions.getGroupValues(...)`
  * (shared useFormOptions() hook fetched once at EventFormPage level)
@@ -49,6 +55,9 @@ import { REGIONS_WITHOUT_PROVINCES } from '@/hooks/usePhilippineAddress'; // adj
  *
  * Props:
  * @param {object} form - All form field values
+ * @param {boolean} isAddressRequired - Whether this event needs an
+ *   address collected. Defaults to true. When false, the entire
+ *   Region/Province/City/Barangay block (Rows 5 & 6) is not rendered.
  * @param {function} onChange - Generic field change handler
  * @param {function} onFieldTouch - Marks a single field as touched (fieldName) => void
  * @param {object} errors - Validation errors
@@ -71,6 +80,7 @@ import { REGIONS_WITHOUT_PROVINCES } from '@/hooks/usePhilippineAddress'; // adj
  */
 export default function BasicInfoSection({
   form,
+  isAddressRequired = true,
   onChange,
   onFieldTouch,
   errors,
@@ -199,21 +209,24 @@ export default function BasicInfoSection({
 
   // Keep form.province in sync with provinceCode, regardless of what
   // caused provinceCode to change (direct selection, or derived by the
-  // hook after a City was picked without a Province first).
+  // hook after a City was picked without a Province first). Skipped
+  // entirely when the address block isn't rendered — nothing to sync.
   useEffect(() => {
+    if (!isAddressRequired) return;
     const selected = provinceOptions.find((p) => p.province_code === provinceCode);
     onChange({
       target: { name: 'province', value: selected?.province_name ?? '' },
     });
-  }, [provinceCode, provinceOptions]);
+  }, [provinceCode, provinceOptions, isAddressRequired]);
 
   // Keep form.region in sync with regionCode, same reasoning as above.
   useEffect(() => {
+    if (!isAddressRequired) return;
     const selected = regionOptions.find((r) => r.region_code === regionCode);
     onChange({
       target: { name: 'region', value: selected?.region_name ?? '' },
     });
-  }, [regionCode, regionOptions]);
+  }, [regionCode, regionOptions, isAddressRequired]);
 
   return (
     <section id='basicInfo' className='mb-[34px]'>
@@ -380,81 +393,87 @@ export default function BasicInfoSection({
           ) : null}
         </div>
 
-        {/* Row 5: Region / Province (2-col) */}
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
-          <SearchableSelect
-            id='field-region'
-            label='Region'
-            required
-            value={regionCode}
-            onChange={handleRegionChange}
-            onBlur={() => handleFieldBlur('region')}
-            options={regionSelectOptions}
-            placeholder='Select your region'
-            error={
-              touched.region && (errors.region || addressError)
-                ? errors.region || addressError
-                : undefined
-            }
-          />
-          {regionCode && regionHasNoProvinces ? (
-            <div id='field-province' className='flex flex-col gap-1'>
-              <label className='text-[#121212] mb-2 block text-[14px] font-medium font-satoshi'>
-                Province
-              </label>
-              <p className='text-[13px] text-neutral-gray font-satoshi leading-snug'>
-                This region doesn't have provinces — you can proceed to
-                select your City below.
-              </p>
+        {/* Rows 5 & 6: Region / Province / City / Barangay — only for
+            events that require an address at all. */}
+        {isAddressRequired && (
+          <>
+            {/* Row 5: Region / Province (2-col) */}
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
+              <SearchableSelect
+                id='field-region'
+                label='Region'
+                required
+                value={regionCode}
+                onChange={handleRegionChange}
+                onBlur={() => handleFieldBlur('region')}
+                options={regionSelectOptions}
+                placeholder='Select your region'
+                error={
+                  touched.region && (errors.region || addressError)
+                    ? errors.region || addressError
+                    : undefined
+                }
+              />
+              {regionCode && regionHasNoProvinces ? (
+                <div id='field-province' className='flex flex-col gap-1'>
+                  <label className='text-[#121212] mb-2 block text-[14px] font-medium font-satoshi'>
+                    Province
+                  </label>
+                  <p className='text-[13px] text-neutral-gray font-satoshi leading-snug'>
+                    This region doesn't have provinces — you can proceed to
+                    select your City below.
+                  </p>
+                </div>
+              ) : (
+                <SearchableSelect
+                  id='field-province'
+                  label='Province'
+                  value={provinceCode}
+                  onChange={handleProvinceChange}
+                  onBlur={() => handleFieldBlur('province')}
+                  options={provinceSelectOptions}
+                  placeholder='Select your province'
+                  disabled={!regionCode}
+                  error={
+                    touched.province && errors.province ? errors.province : undefined
+                  }
+                />
+              )}
             </div>
-          ) : (
-            <SearchableSelect
-              id='field-province'
-              label='Province'
-              value={provinceCode}
-              onChange={handleProvinceChange}
-              onBlur={() => handleFieldBlur('province')}
-              options={provinceSelectOptions}
-              placeholder='Select your province'
-              disabled={!regionCode}
-              error={
-                touched.province && errors.province ? errors.province : undefined
-              }
-            />
-          )}
-        </div>
 
-        {/* Row 6: City / Barangay (2-col) */}
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
-          <SearchableSelect
-            id='field-city'
-            label='City'
-            required
-            value={cityCode}
-            onChange={handleCityChange}
-            onBlur={() => handleFieldBlur('city')}
-            options={citySelectOptions}
-            placeholder='Select your city'
-            disabled={!regionCode}
-            error={
-              touched.city && errors.city ? errors.city : undefined
-            }
-          />
-          <SearchableSelect
-            id='field-barangay'
-            label='Barangay'
-            required
-            value={barangayCode}
-            onChange={handleBarangayChange}
-            onBlur={() => handleFieldBlur('barangay')}
-            options={barangaySelectOptions}
-            placeholder='Select your barangay'
-            disabled={!cityCode}
-            error={
-              touched.barangay && errors.barangay ? errors.barangay : undefined
-            }
-          />
-        </div>
+            {/* Row 6: City / Barangay (2-col) */}
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
+              <SearchableSelect
+                id='field-city'
+                label='City'
+                required
+                value={cityCode}
+                onChange={handleCityChange}
+                onBlur={() => handleFieldBlur('city')}
+                options={citySelectOptions}
+                placeholder='Select your city'
+                disabled={!regionCode}
+                error={
+                  touched.city && errors.city ? errors.city : undefined
+                }
+              />
+              <SearchableSelect
+                id='field-barangay'
+                label='Barangay'
+                required
+                value={barangayCode}
+                onChange={handleBarangayChange}
+                onBlur={() => handleFieldBlur('barangay')}
+                options={barangaySelectOptions}
+                placeholder='Select your barangay'
+                disabled={!cityCode}
+                error={
+                  touched.barangay && errors.barangay ? errors.barangay : undefined
+                }
+              />
+            </div>
+          </>
+        )}
       </div>
     </section>
   );
