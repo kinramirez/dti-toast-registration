@@ -7,7 +7,7 @@ import { useFormOptions } from '../hooks/useFormOptions';
 import { registerEvent } from '../api/registration';
 import { getEventById } from '../api/events';
 
-import { initialForm, registrationSchema } from './EventFormPage.schema';
+import { initialForm, buildRegistrationSchema } from './EventFormPage.schema';
 import { stepTransition, buildPayload } from './EventFormPage.utils';
 
 import RegistrationHero from './sections/RegistrationHero';
@@ -62,6 +62,19 @@ export default function EventFormPage() {
 
   const event = stateEvent || fetchedEvent;
   const eventGuId = event?.guid ?? event?.id ?? event?.eventGuId ?? event?.guId ?? eventGuid;
+
+  // ── Address requirement (per-event) ──
+  // Defaults to true (address required) while `event` hasn't loaded yet,
+  // or for events fetched before this field existed on the backend, so
+  // existing behavior is preserved unless the event explicitly says
+  // isAddressRequired: false.
+  const isAddressRequired = event?.isAddressRequired ?? true;
+
+  const schema = useMemo(
+    () => buildRegistrationSchema(isAddressRequired),
+    [isAddressRequired],
+  );
+
   const {
     regionCode,
     setRegionCode,
@@ -86,7 +99,7 @@ export default function EventFormPage() {
 
   // Merged validation errors for all Step 1 fields
   const step1Errors = useMemo(() => {
-    const result = registrationSchema.safeParse({
+    const result = schema.safeParse({
       firstName: form.firstName,
       lastName: form.lastName,
       age: form.age,
@@ -128,7 +141,7 @@ export default function EventFormPage() {
       nextErrors.consent = 'You must agree to the terms to continue.';
     }
     return nextErrors;
-  }, [form]);
+  }, [form, schema]);
 
   // Check if form has any data (for beforeunload warning)
   const hasData = useMemo(() => {
@@ -186,7 +199,7 @@ export default function EventFormPage() {
       ...(form.suppliers.includes(suppliersOtherValue) ? { suppliersOther: true } : {}),
     }));
 
-    const result = registrationSchema.safeParse({
+    const result = schema.safeParse({
       firstName: form.firstName,
       lastName: form.lastName,
       age: form.age,
@@ -236,7 +249,7 @@ export default function EventFormPage() {
     setTouched((prev) => ({ ...prev, consent: true }));
 
     // Validate all Step 1 fields
-    const result = registrationSchema.safeParse({
+    const result = schema.safeParse({
       firstName: form.firstName,
       lastName: form.lastName,
       age: form.age,
@@ -355,6 +368,7 @@ export default function EventFormPage() {
                   >
                     <RegistrationStep1
                       event={event}
+                      isAddressRequired={isAddressRequired}
                       form={form}
                       onChange={onChange}
                       errors={step1Errors}

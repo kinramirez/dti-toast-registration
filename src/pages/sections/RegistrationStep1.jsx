@@ -94,7 +94,7 @@ function formatDateRange(startDateStr, endDateStr) {
 }
 
 /**
- * RegistrationStep1 — Consolidated data-entry form with all 25 fields.
+ * RegistrationStep1 — Consolidated data-entry form with all fields.
  *
  * Card header: the boilerplate "Pre-Register for FREE Entrance" copy is
  * a small tracked eyebrow label, separate from the event title, which
@@ -106,9 +106,14 @@ function formatDateRange(startDateStr, endDateStr) {
  * @param {object} event - Event data (same object passed to EventOverviewCard).
  *   Used to derive the header title, date/venue subtitle so it always matches
  *   the event's actual data instead of being hardcoded.
+ * @param {boolean} isAddressRequired - Whether this event needs an address
+ *   (region/province/city/barangay) collected at all. Comes from
+ *   event.isAddressRequired (EventFormPage resolves the default),
+ *   forwarded straight through to BasicInfoSection, which hides the
+ *   entire address block when false.
  * @param {object} form - All form field values
  * @param {function} onChange - Generic field change handler
- * @param {object} errors - Merged validation errors (all 25 fields)
+ * @param {object} errors - Merged validation errors
  * @param {object} touched - Per-field touched state
  * @param {function} onNext - "Save & Continue" handler (validates → setStep(2))
  * @param {string} regionCode - Current region code for cascading
@@ -130,6 +135,7 @@ function formatDateRange(startDateStr, endDateStr) {
  */
 export default function RegistrationStep1({
   event,
+  isAddressRequired = true,
   form,
   onChange,
   errors,
@@ -258,6 +264,7 @@ export default function RegistrationStep1({
         {/* ── Section 1: Basic Information ── */}
         <BasicInfoSection
           form={form}
+          isAddressRequired={isAddressRequired}
           onChange={onChange}
           errors={errors}
           touched={touched}

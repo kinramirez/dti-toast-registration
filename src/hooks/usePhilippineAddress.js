@@ -98,6 +98,19 @@ function getBarangaysForCity(cityCode) {
   return psgc.getBarangaysByMunicipality(cityCode)
 }
 
+// Region names (by region_code) that have zero rows in provincesData —
+// i.e. regions whose cities are all independent/HUC, with no province
+// layer at all. Currently just NCR, but computed dynamically off the
+// actual PSGC data instead of hardcoding a region-name string, so it
+// stays correct if the underlying package data changes. Consumed by
+// BasicInfoSection to hide the Province field entirely (replaced with
+// an explanatory note) for regions where there's nothing to pick.
+export const REGIONS_WITHOUT_PROVINCES = new Set(
+  regionsData
+    .filter((r) => !provincesData.some((p) => p.reg_code === r.reg_code))
+    .map((r) => r.name),
+)
+
 export function usePhilippineAddress() {
   const [regionCode, setRegionCodeState] = useState('')
   const [provinceCode, setProvinceCodeState] = useState('')
