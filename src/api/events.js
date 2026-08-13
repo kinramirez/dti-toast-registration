@@ -50,13 +50,9 @@ export async function getEventById(eventGuid) {
   return normalizeEvent(event);
 }
 
-// Returns the soonest-upcoming event, in the same raw shape getEvents()
-// returns (title/startDate/endDate/location/guid) — deliberately NOT
-// passed through normalizeEvent, since that's built for getEventById's
-// single-event shape and was stripping/renaming the fields the
-// registration page's header (and EventCard) rely on directly.
 export async function getLatestEvent() {
-  const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10); // YYYY-MM-DD, for the server-side filter
 
   const { events } = await getEvents({
     page: 1,
@@ -68,10 +64,38 @@ export async function getLatestEvent() {
     return null;
   }
 
-  const sorted = [...events].sort((a, b) => {
-    const aDate = new Date(a.startDate ?? a.eventDate ?? a.date);
-    const bDate = new Date(b.startDate ?? b.eventDate ?? b.date);
-    return aDate - bDate;
+  // startDateFrom on the server is date-only, so it still includes events
+  // that started earlier today. Keep an event if it's upcoming (hasn't
+  // started yet) OR ongoing (started, but hasn't ended yet).
+  const eligible = events.filter((ev) => {
+    const start = new Date(ev.startDate ?? ev.eventDate ?? ev.date);
+    const end = new Date(ev.endDate ?? ev.eventEndDate ?? start);
+    if (isNaN(start)) return false;
+    const isUpcoming = start > now;
+    const isOngoing = start <= now && (isNaN(end) || end > now);
+    return isUpcoming || isOngoing;
+  });
+
+  // Fallback: if nothing is eligible (e.g. every fetched event has fully
+  // ended), fall back to the original full set rather than returning null.
+  const pool = eligible.length > 0 ? eligible : events;
+
+  const sorted = [...pool].sort((a, b) => {
+    const aStart = new Date(a.startDate ?? a.eventDate ?? a.date);
+    const bStart = new Date(b.startDate ?? b.eventDate ?? b.date);
+    const aEnd = new Date(a.endDate ?? a.eventEndDate ?? aStart);
+    const bEnd = new Date(b.endDate ?? b.eventEndDate ?? bStart);
+
+    const aOngoing = aStart <= now && (isNaN(aEnd) || aEnd > now);
+    const bOngoing = bStart <= now && (isNaN(bEnd) || bEnd > now);
+
+    // Ongoing events take priority over merely upcoming ones — if
+    // something is happening right now, that's "the" event.
+    if (aOngoing !== bOngoing) return aOngoing ? -1 : 1;
+
+    // Among ongoing events, prefer the one closer to ending (most urgent).
+    // Among upcoming events, prefer the one starting soonest.
+    return aOngoing ? aEnd - bEnd : aStart - bStart;
   });
 
   return sorted[0];
