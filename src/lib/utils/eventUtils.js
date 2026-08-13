@@ -108,11 +108,95 @@ export const getEventMonthKey = (startDate) => {
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'https://api.toastweddingfair.ph/api/v1';
 
+const UPLOADS_BASE_PATH = (() => {
+  try {
+    const origin = new URL(API_BASE_URL).origin;
+    return `${origin}/uploads/events/`;
+  } catch {
+    return 'https://api.toastweddingfair.ph/uploads/events/';
+  }
+})();
+
+/**
+ * Safely parses a value that may be a JSON string or an already-parsed object/array.
+ * Returns null for null/undefined input, the original value if already an object,
+ * or the parsed result. Returns null on parse failure.
+ */
+function safeJsonParse(value) {
+  if (value == null) return null;
+  if (typeof value === 'object') return value; // already parsed (future-proof)
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+// Some upload records store the raw filename with junk in front of it —
+// either a "files//" (double-slash) prefix left over from how the backend
+// joined the storage folder and filename, or a full server-filesystem path.
+// Reduce either shape to just the bare filename by taking the last
+// non-empty path segment.
+const toBasename = (name) => {
+  if (!name || typeof name !== 'string') return '';
+  const segments = name.trim().split(/[\\/]+/).filter(Boolean);
+  return segments.length ? segments[segments.length - 1] : '';
+};
+
+// Some API records store an image-ish field (e.g. `image`, `poster_upload`)
+// as the uploads base URL with a JSON-stringified array of file-metadata
+// objects appended directly onto the end, instead of a plain URL, e.g.:
+//   https://.../uploads/events/[{"name":"files//foo.jpg","usrName":"foo.jpg",...}]
+// This detects that shape by locating the first `[` or `{` in the string,
+// parsing everything from there as JSON, and pulling a filename out of the
+// resulting object (or the first object, if it's an array).
+//
+// IMPORTANT CAVEAT: even when this successfully extracts a filename, the
+// rebuilt uploads/events/ URL is only reliable if the backend actually
+// copied the uploaded file into that public folder. Confirmed cases exist
+// (as of writing) where the backend saves this metadata shape but the
+// file itself is never copied there — it only exists behind the admin
+// panel's signed file.php URL, which requires a server-generated hash
+// this function has no way to obtain. In those cases the rebuilt URL will
+// 404 and the caller's <img onError> fallback will (correctly) kick in.
+// This is a backend data issue, not something fixable from here.
+const extractFilenameFromEmbeddedJson = (value) => {
+  if (!value || typeof value !== 'string') return '';
+  const jsonStart = value.search(/[[{]/);
+  if (jsonStart === -1) return '';
+
+  const parsed = safeJsonParse(value.slice(jsonStart));
+  if (!parsed) return '';
+
+  const entry = Array.isArray(parsed) ? parsed[0] : parsed;
+  if (!entry || typeof entry !== 'object') return '';
+
+  const rawName = entry.name ?? entry.usrName ?? entry.filename ?? entry.fileName ?? '';
+  return toBasename(rawName);
+};
+
 const getImageCandidate = (value) => {
   if (!value) return '';
 
   if (typeof value === 'string') {
-    return value.trim();
+    const trimmed = value.trim();
+
+    // Malformed shape: base URL (or bare value) with an embedded JSON
+    // array/object of file metadata instead of a plain filename/URL.
+    // Detect it and rebuild a proper uploads URL from the real filename.
+    if (/[[{]/.test(trimmed)) {
+      const filename = extractFilenameFromEmbeddedJson(trimmed);
+      // Real filenames can contain spaces, parentheses, etc. — encode
+      // before appending so the resulting URL is well-formed.
+      if (filename) return `${UPLOADS_BASE_PATH}${encodeURIComponent(filename)}`;
+      // Couldn't recover a filename from the embedded JSON — treat as
+      // unusable rather than passing the broken string through, so the
+      // caller's fallback kicks in immediately instead of after a failed
+      // request.
+      return '';
+    }
+
+    return trimmed;
   }
 
   if (Array.isArray(value)) {
@@ -173,21 +257,6 @@ const getEventImageUrl = (event) => {
 
   return resolveImageUrl(imageUrl);
 };
-
-/**
- * Safely parses a value that may be a JSON string or an already-parsed object/array.
- * Returns null for null/undefined input, the original value if already an object,
- * or the parsed result. Returns null on parse failure.
- */
-function safeJsonParse(value) {
-  if (value == null) return null;
-  if (typeof value === 'object') return value; // already parsed (future-proof)
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
-}
 
 export const normalizeEvent = (event) => {
   const imageUrl = getEventImageUrl(event);
