@@ -3,10 +3,11 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { usePhilippineAddress } from '../hooks/usePhilippineAddress';
+import { useFormOptions } from '../hooks/useFormOptions';
 import { registerEvent } from '../api/registration';
 import { getEventById } from '../api/events';
 
-import { initialForm, registrationSchema } from './EventFormPage.schema';
+import { initialForm, buildRegistrationSchema } from './EventFormPage.schema';
 import { stepTransition, buildPayload } from './EventFormPage.utils';
 
 import RegistrationHero from './sections/RegistrationHero';
@@ -61,6 +62,19 @@ export default function EventFormPage() {
 
   const event = stateEvent || fetchedEvent;
   const eventGuId = event?.guid ?? event?.id ?? event?.eventGuId ?? event?.guId ?? eventGuid;
+
+  // ── Address requirement (per-event) ──
+  // Defaults to true (address required) while `event` hasn't loaded yet,
+  // or for events fetched before this field existed on the backend, so
+  // existing behavior is preserved unless the event explicitly says
+  // isAddressRequired: false.
+  const isAddressRequired = event?.isAddressRequired ?? true;
+
+  const schema = useMemo(
+    () => buildRegistrationSchema(isAddressRequired),
+    [isAddressRequired],
+  );
+
   const {
     regionCode,
     setRegionCode,
@@ -77,9 +91,15 @@ export default function EventFormPage() {
     addressError,
   } = usePhilippineAddress();
 
+  // Fetched once here, shared by BasicInfoSection (age/gender) and
+  // PurposeOfVisitSection (role/eventDate/occasion/guests/budget/
+  // suppliers/discoveryChannel) instead of each field making its own
+  // ?type= request.
+  const formOptions = useFormOptions();
+
   // Merged validation errors for all Step 1 fields
   const step1Errors = useMemo(() => {
-    const result = registrationSchema.safeParse({
+    const result = schema.safeParse({
       firstName: form.firstName,
       lastName: form.lastName,
       age: form.age,
@@ -101,7 +121,6 @@ export default function EventFormPage() {
       occasionOther: form.occasionOther,
       suppliersOther: form.suppliersOther,
       specificSuppliers: form.specificSuppliers,
-      lumiPromos: form.lumiPromos,
       discoveryChannel: form.discoveryChannel,
       discoveryOther: form.discoveryOther,
     });
@@ -122,7 +141,7 @@ export default function EventFormPage() {
       nextErrors.consent = 'You must agree to the terms to continue.';
     }
     return nextErrors;
-  }, [form]);
+  }, [form, schema]);
 
   // Check if form has any data (for beforeunload warning)
   const hasData = useMemo(() => {
@@ -130,7 +149,7 @@ export default function EventFormPage() {
       form.firstName, form.lastName, form.age,
       form.email, form.phone, form.company, form.position,
       form.role, form.eventDate, form.occasion, form.guests, form.budget,
-      form.specificSuppliers, form.lumiPromos, form.discoveryChannel,
+      form.specificSuppliers, form.discoveryChannel,
       form.discoveryOther, form.region, form.province, form.city, form.barangay,
       form.occasionOther, form.suppliersOther,
     ];
@@ -148,6 +167,12 @@ export default function EventFormPage() {
 
   // Step 1 → Step 2 (no confirmation modal)
   function handleNextStep1() {
+    // Resolve each group's "Other" literal from the fetched option
+    // metadata (isOther flag) rather than hardcoding 'Other', so this
+    // stays correct even if the backend renames that option.
+    const occasionOtherValue = formOptions.getOtherValue('occasion');
+    const suppliersOtherValue = formOptions.getOtherValue('suppliers');
+
     // Mark all Step 1 fields as touched
     setTouched((prev) => ({
       ...prev,
@@ -161,19 +186,20 @@ export default function EventFormPage() {
       province: true,
       city: true,
       barangay: true,
+      company: true,
+      position: true,
       role: true,
       eventDate: true,
       occasion: true,
       guests: true,
       budget: true,
       suppliers: true,
-      lumiPromos: true,
       discoveryChannel: true,
-      ...(form.occasion === 'Other' ? { occasionOther: true } : {}),
-      ...(form.suppliers.includes('Other') ? { suppliersOther: true } : {}),
+      ...(form.occasion === occasionOtherValue ? { occasionOther: true } : {}),
+      ...(form.suppliers.includes(suppliersOtherValue) ? { suppliersOther: true } : {}),
     }));
 
-    const result = registrationSchema.safeParse({
+    const result = schema.safeParse({
       firstName: form.firstName,
       lastName: form.lastName,
       age: form.age,
@@ -195,7 +221,6 @@ export default function EventFormPage() {
       occasionOther: form.occasionOther,
       suppliersOther: form.suppliersOther,
       specificSuppliers: form.specificSuppliers,
-      lumiPromos: form.lumiPromos,
       discoveryChannel: form.discoveryChannel,
       discoveryOther: form.discoveryOther,
     });
@@ -224,7 +249,7 @@ export default function EventFormPage() {
     setTouched((prev) => ({ ...prev, consent: true }));
 
     // Validate all Step 1 fields
-    const result = registrationSchema.safeParse({
+    const result = schema.safeParse({
       firstName: form.firstName,
       lastName: form.lastName,
       age: form.age,
@@ -246,7 +271,6 @@ export default function EventFormPage() {
       occasionOther: form.occasionOther,
       suppliersOther: form.suppliersOther,
       specificSuppliers: form.specificSuppliers,
-      lumiPromos: form.lumiPromos,
       discoveryChannel: form.discoveryChannel,
       discoveryOther: form.discoveryOther,
     });
@@ -271,7 +295,15 @@ export default function EventFormPage() {
       window.scrollTo(0, 0);
     } catch (error) {
       console.error(error);
-      setSubmitError('Registration failed. Please try again.');
+
+      const serverMessage = error?.response?.data?.message ?? '';
+      const isDuplicateEmail = /already registered/i.test(serverMessage);
+
+      setSubmitError(
+        isDuplicateEmail
+          ? 'Use another email, the email you used is already registered.'
+          : 'Registration failed. Please try again.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -336,6 +368,7 @@ export default function EventFormPage() {
                   >
                     <RegistrationStep1
                       event={event}
+                      isAddressRequired={isAddressRequired}
                       form={form}
                       onChange={onChange}
                       errors={step1Errors}
@@ -354,6 +387,7 @@ export default function EventFormPage() {
                       cityOptions={cityOptions}
                       barangayOptions={barangayOptions}
                       addressError={addressError}
+                      formOptions={formOptions}
                     />
                   </motion.div>
                 )}

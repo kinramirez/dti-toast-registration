@@ -408,3 +408,13 @@
 .toast-exit {
   animation: toastSlideOut 0.3s ease-in forwards;
 }
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px white inset !important;
+  -webkit-text-fill-color: #1e293b !important; /* match your text-slate-800 color */
+  transition: background-color 5000s ease-in-out 0s; /* prevents flash on autofill */
+  caret-color: #1e293b;
+}

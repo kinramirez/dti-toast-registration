@@ -15,6 +15,10 @@ import { formatDate } from '@/lib/utils/eventUtils';
  * - Registration deadline text is derived from event.endDate (the event's
  *   last day) rather than hardcoded, so it always stays in sync with
  *   EventOverviewCard. Venue name is likewise pulled from event.location.
+ * - Event name in the body copy comes from event?.title (falling back to
+ *   "Toast Wedding Fair" only when no event data is available) instead of
+ *   being hardcoded, since this page serves multiple different client
+ *   events, not just Toast.
  *
  * "Why Register?" Card (532×256px):
  * - Background: rgba(197,95,97,0.2), shadow: 0px 6px 4px rgba(18,18,18,0.15)
@@ -46,11 +50,13 @@ const WHY_REGISTER_ITEMS = [
 
 /**
  * @param {object} event - Event data (same object passed to EventOverviewCard
- *   and RegistrationStep1). Provides `location` (venue name) and `endDate`
- *   (used as the registration deadline — the last day of the event).
+ *   and RegistrationStep1). Provides `title` (event name), `location` (venue
+ *   name), and `endDate` (used as the registration deadline — the last day
+ *   of the event).
  * @param {boolean} showWhyRegister - Toggles the "Why Register?" card.
  */
 export default function RegistrationSidebar({ event, showWhyRegister = true }) {
+  const eventName = event?.title || 'Toast Wedding Fair';
   const venueText = event?.location ? ` at ${event.location}` : '';
 
   // Registration deadline = the event's last day (endDate)
@@ -74,7 +80,7 @@ export default function RegistrationSidebar({ event, showWhyRegister = true }) {
         <p className='text-[16px] text-brand-dark leading-relaxed mb-4'>
           Free entrance for those who register now until {registrationDeadline}!
           Submission of this form confirms that you agree to receive updates
-          about Toast Wedding Fair! If you receive the form auto reply, it means
+          about {eventName}! If you receive the form auto reply, it means
           we have received your form and you are guaranteed FREE ENTRY! Valid ID
           should be presented{venueText} on the day. Name should match valid ID.
         </p>

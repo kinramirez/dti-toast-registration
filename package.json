@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dctsph/psgc": "^1.1.0",
     "@fontsource/kanit": "^5.2.8",
     "@fontsource/saira": "^5.2.11",
     "@radix-ui/react-slot": "^1.2.4",
@@ -22,8 +23,7 @@
     "lucide-react": "^0.575.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.13.1",
-    "select-philippines-address": "^1.0.6",
+    "react-router-dom": "^7.11.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.3.6"

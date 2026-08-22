@@ -6,6 +6,7 @@ import StepIndicator from '@/components/ui/StepIndicator';
 import BasicInfoSection from './BasicInfoSection';
 import OrganizationSection from './OrganizationSection';
 import PurposeOfVisitSection from './PurposeOfVisitSection';
+import { parseDateAsLocal } from '@/lib/utils/eventUtils';
 
 const STEPS = [
   { number: 1, label: 'Attendee Information' },
@@ -28,7 +29,7 @@ const FIELD_ORDER = [
   'province',
   'city',
   'barangay',
-  // Organization/Company (optional fields, kept for completeness)
+  // Organization/Company 
   'company',
   'position',
   // Purpose of Visit
@@ -41,7 +42,6 @@ const FIELD_ORDER = [
   'suppliers',
   'suppliersOther',
   'specificSuppliers',
-  'lumiPromos',
   'discoveryChannel',
   'discoveryOther',
 ];
@@ -55,8 +55,8 @@ const FIELD_ORDER = [
  *   - Different years:     "November 12, 2026 – January 3, 2027"
  */
 function formatDateRange(startDateStr, endDateStr) {
-  const start = startDateStr ? new Date(startDateStr) : null;
-  const end = endDateStr ? new Date(endDateStr) : null;
+  const start = startDateStr ? parseDateAsLocal(startDateStr) : null;
+  const end = endDateStr ? parseDateAsLocal(endDateStr) : null;
 
   const startValid = start && !Number.isNaN(start.getTime());
   const endValid = end && !Number.isNaN(end.getTime());
@@ -94,22 +94,26 @@ function formatDateRange(startDateStr, endDateStr) {
 }
 
 /**
- * RegistrationStep1 — Consolidated data-entry form with all 25 fields.
+ * RegistrationStep1 — Consolidated data-entry form with all fields.
  *
- * Design spec §2.3–2.8, §4.3–4.9:
- * - Form card: 977px, white, rounded-lg, shadow
- * - Card header: Cormorant Garamond 32px title + rose 20px subtitle
- * - Step indicator: "Attendee Information" / "Review & Submit"
- * - Three sub-sections with icon badges: BasicInfo, Organization, PurposeOfVisit
- * - "Save & Continue →" gradient button (205×48px)
+ * Card header: the boilerplate "Pre-Register for FREE Entrance" copy is
+ * a small tracked eyebrow label, separate from the event title, which
+ * is rendered large (64/80/88px) in the brand rose gradient so it's the
+ * dominant element on the header rather than trailing off the end of a
+ * sentence. Date/venue sits below as a supporting line.
  *
  * Props:
  * @param {object} event - Event data (same object passed to EventOverviewCard).
  *   Used to derive the header title, date/venue subtitle so it always matches
  *   the event's actual data instead of being hardcoded.
+ * @param {boolean} isAddressRequired - Whether this event needs an address
+ *   (region/province/city/barangay) collected at all. Comes from
+ *   event.isAddressRequired (EventFormPage resolves the default),
+ *   forwarded straight through to BasicInfoSection, which hides the
+ *   entire address block when false.
  * @param {object} form - All form field values
  * @param {function} onChange - Generic field change handler
- * @param {object} errors - Merged validation errors (all 25 fields)
+ * @param {object} errors - Merged validation errors
  * @param {object} touched - Per-field touched state
  * @param {function} onNext - "Save & Continue" handler (validates → setStep(2))
  * @param {string} regionCode - Current region code for cascading
@@ -125,9 +129,13 @@ function formatDateRange(startDateStr, endDateStr) {
  * @param {array} cityOptions - Async-loaded city list (depends on provinceCode)
  * @param {array} barangayOptions - Async-loaded barangay list (depends on cityCode)
  * @param {string|null} addressError - Address loading error
+ * @param {object} formOptions - Shared useFormOptions() return value, forwarded
+ *   to BasicInfoSection (age, gender) and PurposeOfVisitSection (role, eventDate,
+ *   occasion, guests, budget, suppliers, discoveryChannel)
  */
 export default function RegistrationStep1({
   event,
+  isAddressRequired = true,
   form,
   onChange,
   errors,
@@ -146,9 +154,12 @@ export default function RegistrationStep1({
   cityOptions,
   barangayOptions,
   addressError,
+  formOptions,
 }) {
   const fieldRefs = useRef({});
   const prevTouchedRef = useRef({});
+
+  const eventTitle = event?.title ?? '';
 
   // Derive the header date range from the same event data EventOverviewCard uses,
   // collapsing the year (and month, when possible) so it doesn't repeat.
@@ -204,14 +215,42 @@ export default function RegistrationStep1({
       }}
     >
       {/* ── Card Header ── */}
-      <div className='flex flex-col items-center text-center mb-16'>
-        <h1 className='font-cormorant text-[32px] font-bold text-brand-dark leading-tight mb-2'>
-          Pre-Register for FREE Entrance - {event?.title}
+      <div className='flex flex-col items-center text-center mb-12'>
+        {/* Eyebrow — de-emphasized boilerplate, separated from the title */}
+        {eventTitle && (
+          <span
+            className='inline-flex items-center gap-3 mb-4 font-satoshi text-xl font-bold uppercase tracking-[0.2em]'
+            style={{ color: '#C55F61' }}
+          >
+            <span
+              className='h-px w-10'
+              style={{ backgroundColor: '#C55F61', opacity: 0.5 }}
+              aria-hidden='true'
+            />
+            Pre-Register for FREE Entrance
+            <span
+              className='h-px w-10'
+              style={{ backgroundColor: '#C55F61', opacity: 0.5 }}
+              aria-hidden='true'
+            />
+          </span>
+        )}
+
+        {/* Event title — the dominant element on the page */}
+        <h1 className='font-cormorant text-[64px] sm:text-[80px] lg:text-[88px] font-bold leading-[1] mb-3 px-4 break-words bg-gradient-to-b from-[#F57E80] to-[#C55F61] bg-clip-text text-transparent'>
+          {eventTitle}
         </h1>
-        <p
-          className='text-[20px] font-bold font-satoshi'
-          style={{ color: '#C55F61' }}
-        >
+
+        {/* Accent underline — echoes the title gradient, punctuates it */}
+        {eventTitle && (
+          <div
+            className='w-24 h-[4px] rounded-full mb-4 bg-gradient-to-b from-[#F57E80] to-[#C55F61]'
+            aria-hidden='true'
+          />
+        )}
+
+        {/* Date/venue — quieter than the title, but sized to stay readable */}
+        <p className='text-2xl font-semibold font-satoshi text-neutral-gray'>
           {dateVenueLabel}
         </p>
       </div>
@@ -225,6 +264,7 @@ export default function RegistrationStep1({
         {/* ── Section 1: Basic Information ── */}
         <BasicInfoSection
           form={form}
+          isAddressRequired={isAddressRequired}
           onChange={onChange}
           errors={errors}
           touched={touched}
@@ -242,12 +282,15 @@ export default function RegistrationStep1({
           cityOptions={cityOptions}
           barangayOptions={barangayOptions}
           addressError={addressError}
+          formOptions={formOptions}
         />
 
         {/* ── Section 2: Organization/Company Information ── */}
         <OrganizationSection
           form={form}
           onChange={onChange}
+          errors={errors}
+          touched={touched}
           registerField={registerField}
         />
 
@@ -258,6 +301,7 @@ export default function RegistrationStep1({
           errors={errors}
           touched={touched}
           registerField={registerField}
+          formOptions={formOptions}
         />
 
         {/* ── Save & Continue Button ── */}

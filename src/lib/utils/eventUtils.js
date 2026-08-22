@@ -1,7 +1,33 @@
+export function parseDateAsLocal(dateString) {
+  if (!dateString) return null;
+  const value = typeof dateString === 'string' ? dateString.trim() : String(dateString);
+
+  const isoMatch = value.match(
+    /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?)?(?:Z|[+-]\d{2}:?\d{2})?$/,
+  );
+  if (isoMatch) {
+    const [_, year, month, day, hour = '0', minute = '0', second = '0', ms = '0'] = isoMatch;
+    const normalizedMs = (ms + '000').slice(0, 3);
+    return new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute),
+      Number(second),
+      Number(normalizedMs),
+    );
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export function formatDisplayDate(startDate, endDate) {
   if (!startDate) return '';
-  const start = new Date(startDate);
-  const end = endDate ? new Date(endDate) : null;
+  const start = parseDateAsLocal(startDate);
+  const end = endDate ? parseDateAsLocal(endDate) : null;
+  if (!start) return '';
 
   const date = start.toLocaleDateString('en-US', {
     month: 'long',
@@ -24,8 +50,8 @@ export function formatDisplayDate(startDate, endDate) {
 
 export function formatDate(dateString) {
   if (!dateString) return '';
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return dateString;
+  const date = parseDateAsLocal(dateString);
+  if (!date) return dateString;
   return date.toLocaleDateString('en-US', {
     month: 'long',
     day: '2-digit',
@@ -72,8 +98,8 @@ export const normalizeRegion = (region) => {
 
 export const getEventMonthKey = (startDate) => {
   if (!startDate) return '';
-  const date = new Date(startDate);
-  if (Number.isNaN(date.getTime())) return '';
+  const date = parseDateAsLocal(startDate);
+  if (!date) return '';
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   return `${year}-${month}`;
@@ -144,11 +170,104 @@ const applyFallbacks = (event) => {
   return result;
 };
 
+/**
+ * Safely parses a value that may be a JSON string or an already-parsed object/array.
+ * Returns null for null/undefined input, the original value if already an object,
+ * or the parsed result. Returns null on parse failure.
+ */
+function safeJsonParse(value) {
+  if (value == null) return null;
+  if (typeof value === 'object') return value; // already parsed (future-proof)
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+// Some upload records store the raw filename with junk in front of it —
+// either a "files//" (double-slash) prefix left over from how the backend
+// joined the storage folder and filename, or a full server-filesystem path
+// (e.g. "/home/toastweddingfair/admin.toastweddingfair.ph/Admin/files/foo.jpg").
+// Reduce either shape to just the bare filename by taking the last
+// non-empty path segment.
+const toBasename = (name) => {
+  if (!name || typeof name !== 'string') return '';
+  const segments = name.trim().split(/[\\/]+/).filter(Boolean);
+  return segments.length ? segments[segments.length - 1] : '';
+};
+
+// Some API records store an image-ish field (e.g. `image`, `poster_upload`)
+// as the uploads base URL with a JSON-stringified array of file-metadata
+// objects appended directly onto the end, instead of a plain URL, e.g.:
+//   https://.../uploads/events/[{"name":"files//foo.jpg","usrName":"foo.jpg",...}]
+// This detects that shape by locating the first `[` or `{` in the string,
+// parsing everything from there as JSON, and pulling a filename out of the
+// resulting object (or the first object, if it's an array).
+const extractFilenameFromEmbeddedJson = (value) => {
+  if (!value || typeof value !== 'string') return '';
+  const jsonStart = value.search(/[[{]/);
+  if (jsonStart === -1) return '';
+
+  const parsed = safeJsonParse(value.slice(jsonStart));
+  if (!parsed) return '';
+
+  const entry = Array.isArray(parsed) ? parsed[0] : parsed;
+  if (!entry || typeof entry !== 'object') return '';
+
+  const rawName = entry.name ?? entry.usrName ?? entry.filename ?? entry.fileName ?? '';
+  return toBasename(rawName);
+};
+
+// Resolves a single venuePhoto array entry to a full image URL. Entries
+// come in two shapes seen in the wild:
+//   - a bare filename string, e.g. "1784020024240-event12_image4.jpg"
+//   - a file-metadata object with a name that may be a bare filename, a
+//     "files//"-prefixed name, or a full server-filesystem path, e.g.
+//     "/home/toastweddingfair/admin.toastweddingfair.ph/Admin/files/foo.jpg"
+// (the same upload-widget response shape sometimes found in `image` /
+// `poster_upload`). Both are reduced to a bare filename and rebuilt as a
+// proper uploads URL.
+const resolveVenuePhotoEntry = (entry) => {
+  let raw = '';
+  if (typeof entry === 'string') {
+    raw = entry.trim();
+  } else if (entry && typeof entry === 'object') {
+    raw = entry.name ?? entry.usrName ?? entry.filename ?? entry.fileName ?? '';
+  }
+  if (!raw) return '';
+
+  // Already a full URL — nothing to rebuild.
+  if (/^(https?:)?\/\//i.test(raw)) return raw;
+
+  const filename = toBasename(raw);
+  if (!filename) return '';
+
+  // Encode in case the filename contains spaces, parentheses, etc.
+  return `${UPLOADS_BASE_PATH}${encodeURIComponent(filename)}`;
+};
+
 const getImageCandidate = (value) => {
   if (!value) return '';
 
   if (typeof value === 'string') {
-    return value.trim();
+    const trimmed = value.trim();
+
+    // Malformed shape: base URL (or bare value) with an embedded JSON
+    // array/object of file metadata instead of a plain filename/URL.
+    // Detect it and rebuild a proper uploads URL from the real filename.
+    if (/[[{]/.test(trimmed)) {
+      const filename = extractFilenameFromEmbeddedJson(trimmed);
+      // Real filenames can contain spaces, parentheses, etc. (e.g. an
+      // upload-dedup name like "Squig_10-08_01 (1)_afz4jjks.jpg") — encode
+      // before appending so the resulting URL is well-formed.
+      if (filename) return `${UPLOADS_BASE_PATH}${encodeURIComponent(filename)}`;
+      // Couldn't recover a filename from the embedded JSON — treat as
+      // unusable rather than passing the broken string through.
+      return '';
+    }
+
+    return trimmed;
   }
 
   if (Array.isArray(value)) {
@@ -210,21 +329,6 @@ const getEventImageUrl = (event) => {
   return resolveImageUrl(imageUrl);
 };
 
-/**
- * Safely parses a value that may be a JSON string or an already-parsed object/array.
- * Returns null for null/undefined input, the original value if already an object,
- * or the parsed result. Returns null on parse failure.
- */
-function safeJsonParse(value) {
-  if (value == null) return null;
-  if (typeof value === 'object') return value; // already parsed (future-proof)
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
-}
-
 export const normalizeEvent = (event) => {
   const imageUrl = getEventImageUrl(event);
 
@@ -232,18 +336,11 @@ export const normalizeEvent = (event) => {
   const highlights = safeJsonParse(event.highlights);
   const whatToExpect = safeJsonParse(event.whatToExpect);
 
-  // Parse venuePhoto: JSON-stringified array of bare filenames → array of full URLs
+  // Parse venuePhoto: JSON-stringified array of either bare filename
+  // strings or file-metadata objects → array of full URLs
   const rawVenuePhoto = safeJsonParse(event.venuePhoto);
   const venuePhoto = Array.isArray(rawVenuePhoto)
-    ? rawVenuePhoto
-        .map((filename) => {
-          if (!filename || typeof filename !== 'string') return '';
-          // If already a full URL (e.g., from double-normalization), return as-is
-          if (/^(https?:)?\/\//i.test(filename)) return filename;
-          // Build full URL: uploads base path + filename
-          return `${UPLOADS_BASE_PATH}${filename}`;
-        })
-        .filter(Boolean)
+    ? rawVenuePhoto.map(resolveVenuePhotoEntry).filter(Boolean)
     : [];
 
   // Coerce numeric fields (distinguish 0 from null/missing)
@@ -294,10 +391,8 @@ export const isEventUpcoming = (event) => {
   const now = new Date();
   now.setHours(0, 0, 0, 0); // normalize to start of today
   // Prefer endDate (multi-day events still ongoing), fall back to startDate
-  const eventDate = event.endDate
-    ? new Date(event.endDate)
-    : new Date(event.startDate);
-  return !isNaN(eventDate.getTime()) && eventDate >= now;
+  const eventDate = parseDateAsLocal(event.endDate || event.startDate);
+  return eventDate !== null && eventDate >= now;
 };
 
 /**
@@ -327,14 +422,7 @@ export const isEventInDateRange = (event, startDateFrom, startDateTo) => {
   // - Returns null for invalid / falsy inputs.
   const parseDateLocal = (dateString) => {
     if (!dateString) return null;
-    // Date-only string: YYYY-MM-DD (no time component)
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-      const [year, month, day] = dateString.split('-').map(Number);
-      return new Date(year, month - 1, day); // local midnight
-    }
-    // ISO 8601 timestamp or other format — standard parsing
-    const date = new Date(dateString);
-    return isNaN(date.getTime()) ? null : date;
+    return parseDateAsLocal(dateString);
   };
 
   // --- Parse event dates with validation ---

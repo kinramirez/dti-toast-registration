@@ -14,7 +14,7 @@ import {
 import toastSuccessBg from '@/assets/toast-success-bg.png';
 import Footer from '@/components/Footer';
 import ContactStrip from '@/features/events/components/ContactStrip';
-import { formatDate, formatTime } from '@/lib/utils/eventUtils';
+import { formatDate, formatTime, parseDateAsLocal } from '@/lib/utils/eventUtils';
 
 /* ───────────────────────────────────────────
    Static data
@@ -240,8 +240,8 @@ function RegisteredEventCard({ event }) {
   // Day-of-week labels
   const getDayLabel = (dateStr) => {
     if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return '';
+    const d = parseDateAsLocal(dateStr);
+    if (!d) return '';
     return d.toLocaleDateString('en-US', { weekday: 'long' });
   };
   const startDay = getDayLabel(event.startDate);

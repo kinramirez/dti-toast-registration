@@ -3,107 +3,6 @@ import { Handshake, Check } from 'lucide-react';
 import FormField from '@/components/ui/FormField';
 import FormSelect from '@/components/ui/FormSelect';
 
-const ROLE_OPTIONS = [
-  'I am the one planning it.',
-  'I am accompanying someone.',
-  'I am just looking around.',
-];
-
-const EVENT_DATE_OPTIONS = [
-  'July-Dec 2026',
-  'Jan-June 2027',
-  'July-Dec 2027',
-  'Jan-June 2028',
-  'July-Dec 2028',
-  'Jan-June 2029',
-  'July 2029 onwards',
-];
-
-const OCCASION_OPTIONS = [
-  'Wedding',
-  'Debut',
-  'Birthday Party',
-  'Social Gathering',
-  'Anniversary',
-  'Family Reunion',
-  'Corporate Event',
-  'Other',
-];
-
-const GUESTS_OPTIONS = [
-  'Below 50',
-  '50-100',
-  '101-150',
-  '151-200',
-  '201-250',
-  '251-300',
-  '301-350',
-  '351-400',
-  '401-450',
-  '451-500',
-  '501 and above',
-];
-
-const BUDGET_OPTIONS = [
-  'Below PHP 100,000',
-  'PHP 100,000 - PHP 300,000',
-  'PHP 301,000 - PHP 500,000',
-  'PHP 501,000 - PHP 999,000',
-  'PHP 1,000,000 - PHP 1,500,000',
-  'PHP 1,600,000 - PHP 2,000,000',
-  'PHP 2,100,000 - PHP 2,900,000',
-  'PHP 3,000,000 and above',
-];
-
-const LUMI_OPTIONS = [
-  'Yes, send me discounts & promos',
-  'No, not right now',
-  'Maybe later',
-];
-
-const DISCOVERY_OPTIONS = [
-  'Toast Wedding Fair Instagram',
-  'Toast Wedding Fair Facebook',
-  'Toast Wedding Fair Tiktok',
-  'Bride and Breakfast',
-  'Email Newsletter',
-  'DiscoverMNL',
-  'Text Message',
-  'Billboards/Outdoor Banners',
-  'Flyer',
-  'Friends & Family',
-  'WhenInManila',
-  'Other',
-];
-
-const SUPPLIERS_OPTIONS = [
-  'Alcohol Suppliers',
-  'Bridal Car',
-  'Bridal Shoes and Accessories',
-  'Cakes and other Baked Goods',
-  'Caterers',
-  'Coordinator',
-  'Entertainment',
-  'Event Stylist',
-  'Fashion Stylist',
-  'Florist',
-  'Food Carts',
-  'Gowns and Suits',
-  'Host',
-  'Invitations and Stationary',
-  'Jewelry',
-  'Lights and Sounds',
-  'Make Up Artists',
-  'Mobile Bar',
-  'Photographers',
-  'Prenup Needs',
-  'Tent and Aircon Rental',
-  'Venue',
-  'Videographers',
-  'Souvenirs',
-  'Other',
-];
-
 /**
  * PurposeOfVisitSection — Purpose of Visit form sub-section.
  *
@@ -111,6 +10,16 @@ const SUPPLIERS_OPTIONS = [
  * - Section header: Handshake icon badge + "Purpose of Visit" + subtitle
  * - Fields: role, eventDate, occasion, guests, budget, suppliers checklist,
  *   specificSuppliers, lumiPromos, discoveryChannel (2-col grid), discoveryOther
+ *
+ * Option lists (role, eventDate, occasion, guests, budget, suppliers,
+ * lumiPromos, discoveryChannel) are no longer hardcoded here — they come
+ * from the `formOptions` prop, sourced from a single GET /form-options
+ * request via the useFormOptions hook and shared with BasicInfoSection's
+ * age/gender fields. "Other" detection for occasion/suppliers/
+ * discoveryChannel is driven by each option's `isOther` flag from the API
+ * (via formOptions.getOtherValue) rather than a hardcoded 'Other' string,
+ * so a backend rename of that option doesn't silently break the
+ * specify-field logic.
  *
  * Props:
  * @param {object} form - All form field values
@@ -120,6 +29,8 @@ const SUPPLIERS_OPTIONS = [
  * @param {function} registerField - name => refCallback, provided by
  *   RegistrationStep1 so this section's fields participate in the
  *   whole-form "scroll to first invalid field" behavior.
+ * @param {object} formOptions - Shared useFormOptions() return value:
+ *   { optionGroups, loading, error, getGroupValues, getOtherValue }
  */
 export default function PurposeOfVisitSection({
   form,
@@ -127,7 +38,22 @@ export default function PurposeOfVisitSection({
   errors,
   touched,
   registerField,
+  formOptions,
 }) {
+  const { getGroupValues, getOtherValue } = formOptions;
+
+  const roleOptions = getGroupValues('role');
+  const eventDateOptions = getGroupValues('eventDate');
+  const occasionOptions = getGroupValues('occasion');
+  const guestsOptions = getGroupValues('guests');
+  const budgetOptions = getGroupValues('budget');
+  const suppliersOptions = getGroupValues('suppliers');
+  const lumiOptions = getGroupValues('lumiPromos');
+  const discoveryOptions = getGroupValues('discoveryChannel');
+
+  const occasionOtherValue = getOtherValue('occasion');
+  const suppliersOtherValue = getOtherValue('suppliers');
+
   function handleChange(e) {
     onChange(e);
   }
@@ -146,12 +72,12 @@ export default function PurposeOfVisitSection({
 
   const selectedSuppliers = form.suppliers || [];
   const hasOtherSuppliersSelected = selectedSuppliers.some(
-    (s) => s !== 'Other'
+    (s) => s !== suppliersOtherValue
   );
 
-  // The free-text "Other" field is only usable when the "Other" radio
-  // option is selected; otherwise it stays disabled.
-  const isDiscoveryOtherSelected = form.discoveryChannel === 'Other';
+  // The free-text "Other" field is only usable when the isOther-flagged
+  // discovery-channel option is selected; otherwise it stays disabled.
+  const isDiscoveryOtherSelected = form.discoveryChannel === getOtherValue('discoveryChannel');
 
   return (
     <section id='purposeOfVisit' className='mb-[34px]'>
@@ -186,7 +112,7 @@ export default function PurposeOfVisitSection({
               value={form.role}
               onChange={handleChange}
               placeholder='Select your role'
-              options={ROLE_OPTIONS}
+              options={roleOptions}
               error={touched.role ? errors.role : undefined}
             />
           </div>
@@ -198,7 +124,7 @@ export default function PurposeOfVisitSection({
               value={form.eventDate}
               onChange={handleChange}
               placeholder='Select your event date'
-              options={EVENT_DATE_OPTIONS}
+              options={eventDateOptions}
               error={touched.eventDate ? errors.eventDate : undefined}
             />
           </div>
@@ -214,7 +140,7 @@ export default function PurposeOfVisitSection({
               value={form.occasion}
               onChange={handleChange}
               placeholder='Select occasion'
-              options={OCCASION_OPTIONS}
+              options={occasionOptions}
               error={touched.occasion ? errors.occasion : undefined}
             />
           </div>
@@ -226,14 +152,14 @@ export default function PurposeOfVisitSection({
               value={form.guests}
               onChange={handleChange}
               placeholder='Select number of guests'
-              options={GUESTS_OPTIONS}
+              options={guestsOptions}
               error={touched.guests ? errors.guests : undefined}
             />
           </div>
         </div>
 
         {/* Conditional Occasion "Other" */}
-        {form.occasion === 'Other' && (
+        {form.occasion === occasionOtherValue && (
           <div ref={registerField('occasionOther')}>
             <FormField
               label='Please specify'
@@ -259,7 +185,7 @@ export default function PurposeOfVisitSection({
               value={form.budget}
               onChange={handleChange}
               placeholder='Select Budget'
-              options={BUDGET_OPTIONS}
+              options={budgetOptions}
               error={touched.budget ? errors.budget : undefined}
             />
           </div>
@@ -271,8 +197,8 @@ export default function PurposeOfVisitSection({
               <span className='text-red-500 ml-0.5'>*</span>
             </label>
             <div className='grid grid-cols-1 gap-2 pt-2 px-1 max-h-[280px] overflow-y-auto overflow-x-hidden'>
-              {SUPPLIERS_OPTIONS.map((option) => {
-                const isOther = option === 'Other';
+              {suppliersOptions.map((option) => {
+                const isOther = option === suppliersOtherValue;
                 const isDisabled = isOther && hasOtherSuppliersSelected;
                 const isChecked = selectedSuppliers.includes(option);
 
@@ -314,7 +240,7 @@ export default function PurposeOfVisitSection({
         </div>
 
         {/* Conditional Suppliers "Other" */}
-        {(form.suppliers || []).includes('Other') && (
+        {selectedSuppliers.includes(suppliersOtherValue) && (
           <div ref={registerField('suppliersOther')}>
             <FormField
               label='Please specify'
@@ -341,14 +267,14 @@ export default function PurposeOfVisitSection({
           />
         </div>
 
-        {/* Lumi Candles Radio (full-width horizontal row) — now required */}
+        {/* Lumi Candles Radio (full-width horizontal row) */}
         <div className='flex flex-col gap-1' ref={registerField('lumiPromos')}>
           <label className='text-[#121212] mb-2 block text-[14px] font-medium font-satoshi'>
             Would you like to receive discounts & promos from Lumi Candles?
             <span className='text-red-500 ml-0.5'>*</span>
           </label>
           <div className='flex flex-row flex-wrap items-center gap-4 pt-2'>
-            {LUMI_OPTIONS.map((option) => (
+            {lumiOptions.map((option) => (
               <label
                 key={option}
                 className='flex items-center gap-2 cursor-pointer'
@@ -394,7 +320,7 @@ export default function PurposeOfVisitSection({
             <span className='text-red-500 ml-0.5'>*</span>
           </label>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-3 pt-2'>
-            {DISCOVERY_OPTIONS.map((option) => {
+            {discoveryOptions.map((option) => {
               const isChecked = form.discoveryChannel === option;
 
               return (
@@ -437,7 +363,7 @@ export default function PurposeOfVisitSection({
           ) : null}
         </div>
 
-        {/* Discovery Other (full-width) — only usable when 'Other' is selected */}
+        {/* Discovery Other (full-width) — only usable when the isOther-flagged option is selected */}
         <div ref={registerField('discoveryOther')}>
           <FormField
             label='Other'
